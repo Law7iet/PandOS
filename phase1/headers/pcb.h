@@ -1,11 +1,10 @@
-
 /* 1.
 Initialize the pcbFree list to contain all the elements of the static array of MAXPROC pcbs.
 This method will be called only once during data structure initialization. */
 void initPcbs();
 
 /* 2.
-Insert the element pointed to byponto the pcbFree list. */
+Insert the element pointed to by p onto the pcbFree list. */
 void freePcb(pcb_t *p);
 
 /* 3.
