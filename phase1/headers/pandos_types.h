@@ -13,6 +13,8 @@
 typedef signed int cpu_t;
 typedef unsigned int memaddr;
 
+typedef int support_t;
+
 /* process table entry type */
 typedef struct pcb_t {
 
