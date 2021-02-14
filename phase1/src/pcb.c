@@ -142,3 +142,51 @@ pcb_t * outProcQ(pcb_t **tp, pcb_t *p) {
     }
     return NULL;
 }
+
+int emptyChild(pcb_t *p) {
+    return emptyProcQ(p->p_child);
+}
+
+void inserChild(pcb_t *prn_t, pcb_t *p) {
+    if(emptyChild(prn_t)) {
+        prn_t->p_child = p;
+    } else {
+        pcb_t *tmp = prn_t->p_child;
+        while(tmp->p_next_sib != NULL && tmp->p_next_sib != p) {
+            tmp = tmp->p_next_sib;
+        }
+        if(tmp->p_next_sib != p) {
+            tmp->p_next_sib = p;
+            p->p_prev_sib = tmp;
+            p->p_next_sib = prn_t->p_child;
+            (prn_t->p_child)->p_prev_sib = p;
+        }
+    }
+}
+
+pcb_t * removeChild(pcb_t *p) {
+    if(emptyChild(p)) {
+        return NULL;
+    } else {
+        pcb_t *tmp = p->p_child;
+        if(tmp->p_next_sib == tmp->p_prev_sib) {
+            /* Ha un solo figlio */
+            p->p_child = NULL;
+            return tmp;
+        } else {
+            (tmp->p_next_sib)->p_prev_sib = tmp->p_prev_sib;
+            (tmp->p_prev_sib)->p_next_sib = tmp->p_next_sib;
+            p->p_child = tmp->p_next_sib;
+            return tmp;
+        }
+    }
+}
+
+pcb_t *outChild(pcb_t *p) {
+    if(emptyProcQ(p->p_prnt)) {
+        return NULL;
+    } else {
+        removeChild(p->p_prnt);
+        return p;
+    }
+}
