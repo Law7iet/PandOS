@@ -50,7 +50,6 @@ pcb_t * allocPcb() {
         pcb->p_time = 0;
         pcb->p_semAdd = NULL;
         pcb->p_supportStruct = NULL;
-
         return pcb;
     }
 }
@@ -86,11 +85,11 @@ void insertProcQ(pcb_t **tp, pcb_t *p) {
     }
 }
 
-pcb_t * headProcQ(pcb_t **tp) {
-    if(*tp == NULL) {
+pcb_t * headProcQ(pcb_t *tp) {
+    if(tp == NULL) {
         return NULL;
     } else {
-        return (*tp)->p_prev;
+        return tp->p_prev;
     }
 }
 
@@ -147,7 +146,7 @@ int emptyChild(pcb_t *p) {
     return emptyProcQ(p->p_child);
 }
 
-void inserChild(pcb_t *prn_t, pcb_t *p) {
+void insertChild(pcb_t *prn_t, pcb_t *p) {
     if(emptyChild(prn_t)) {
         prn_t->p_child = p;
     } else {

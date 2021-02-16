@@ -32,7 +32,7 @@ void insertProcQ(pcb_t **tp, pcb_t *p);
 Return a pointer to the first pcb from the process queue whose tail is pointed to by tp.
 Do not remove this pcb from the process queue.
 Return NULL if the process queue is empty. */
-pcb_t * headProcQ(pcb_t **tp);
+pcb_t * headProcQ(pcb_t *tp);
 
 /* 8.
 Remove the first (i.e. head) element from the process queue whose tail-pointer is pointed to by tp.
