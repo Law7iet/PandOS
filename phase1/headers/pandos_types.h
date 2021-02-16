@@ -13,8 +13,6 @@
 typedef signed int cpu_t;
 typedef unsigned int memaddr;
 
-typedef int support_t;
-
 /* process table entry type */
 typedef struct pcb_t {
 
@@ -34,7 +32,7 @@ typedef struct pcb_t {
     int *p_semAdd;									/* ptr to semaphore on which proc is blocked				*/
 
     /* support layer information */
-    support_t *p_supportStruct;
+    /* support_t *p_supportStruct; */
 
 }  pcb_t, *pcb_PTR;
 

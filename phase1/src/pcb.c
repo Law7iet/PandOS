@@ -7,11 +7,17 @@ pcb_t *pcbFree_h;
 
 void initPcbs() {
     int i;
+    /* Inizializza il primo pcb */
     pcbFree_h = &pcbFree_table[0];
-    for(i = 1; i < MAXPROC; i++) {
-        pcbFree_table[i - 1].p_prev = NULL;
-        pcbFree_table[i - 1].p_next = &pcbFree_table[i];
+    pcbFree_table[0].p_prev = NULL;
+    pcbFree_table[0].p_next = &(pcbFree_table[1]);
+    /* Inizializza i pcb intermedi */
+    for(i = 1; i < MAXPROC - 1; i++) {
+        pcbFree_table[i].p_prev = &pcbFree_table[i - 1];
+        pcbFree_table[i].p_next = &pcbFree_table[i + 1];
     }
+    /* Inizializza l'ultimo pcb */
+    pcbFree_table[MAXPROC - 1].p_prev = &(pcbFree_table[MAXPROC - 2]);
     pcbFree_table[MAXPROC - 1].p_next = NULL;
 }
 
@@ -28,8 +34,13 @@ pcb_t * allocPcb() {
     } else {
         /* immagazzina e rimuove il primo elemento in coda */
         pcb_t *pcb = pcbFree_h;
-        pcbFree_h = pcbFree_h->p_next;
-        pcbFree_h = pcbFree_h->p_prev;
+        if(pcbFree_h->p_next == pcbFree_h->p_prev) {
+            /* pcbFree_h ha un solo elemento */
+            pcbFree_h = NULL;
+        } else {
+            pcbFree_h = pcbFree_h->p_next;
+            pcbFree_h->p_prev = NULL;
+        }
         /* inizializza i campi del pcb */
         pcb->p_next = NULL;
         pcb->p_prev = NULL;
@@ -49,7 +60,7 @@ pcb_t * allocPcb() {
         pcb->p_s.lo = 0;
         pcb->p_time = 0;
         pcb->p_semAdd = NULL;
-        pcb->p_supportStruct = NULL;
+        
         return pcb;
     }
 }
@@ -102,10 +113,15 @@ pcb_t * removeProcQ(pcb_t **tp) {
         /* Seleziona l'ultimo elemento */
         pcb_t *tmp;
         tmp = (*tp)->p_prev;
-        /* Corregge il puntatore p_next del penultimo elemento*/
-        (tmp->p_prev)->p_next = *tp;
-        /* Corregge il puntatore p_prev del primo elemento */
-        (*tp)->p_prev = tmp->p_prev;
+        if(tmp == (*tp)) {
+            /* La lista ha un solo elemento */
+            *tp = NULL;
+        } else {
+            /* Corregge il puntatore p_next del penultimo elemento*/
+            (tmp->p_prev)->p_next = *tp;
+            /* Corregge il puntatore p_prev del primo elemento */
+            (*tp)->p_prev = tmp->p_prev;
+        }
         return tmp;
     }
 }
@@ -148,14 +164,20 @@ int emptyChild(pcb_t *p) {
 
 void insertChild(pcb_t *prn_t, pcb_t *p) {
     if(emptyChild(prn_t)) {
+        /* Non ha figli */
         prn_t->p_child = p;
+        p->p_next_sib = p;
+        p->p_prev_sib = p;
+        p->p_prnt = prn_t;
     } else {
+        /* Inserisce il figlio in coda ai fratelli */
         pcb_t *tmp = prn_t->p_child;
-        while(tmp->p_next_sib != NULL && tmp->p_next_sib != p) {
+        while(prn_t->p_child != tmp->p_next_sib && tmp != p) {
             tmp = tmp->p_next_sib;
         }
-        if(tmp->p_next_sib != p) {
+        if(tmp != p) {
             tmp->p_next_sib = p;
+            p->p_prnt = prn_t;
             p->p_prev_sib = tmp;
             p->p_next_sib = prn_t->p_child;
             (prn_t->p_child)->p_prev_sib = p;
@@ -168,7 +190,7 @@ pcb_t * removeChild(pcb_t *p) {
         return NULL;
     } else {
         pcb_t *tmp = p->p_child;
-        if(tmp->p_next_sib == tmp->p_prev_sib) {
+        if(tmp == tmp->p_next_sib) {
             /* Ha un solo figlio */
             p->p_child = NULL;
             return tmp;
