@@ -3,7 +3,7 @@
 #include "pcb.h"
 
 pcb_t pcbFree_table[MAXPROC];
-pcb_t *pcbFree_h;
+pcb_t *pcbFree_h = NULL;
 
 void initPcbs() {
     int i;
@@ -120,7 +120,7 @@ pcb_t * removeProcQ(pcb_t **tp) {
             /* Corregge il puntatore p_next del penultimo elemento*/
             (tmp->p_prev)->p_next = *tp;
             /* Corregge il puntatore p_prev del primo elemento */
-            (*tp)->p_prev = tmp->p_prev;
+            (tmp->p_next)->p_prev = tmp->p_prev;
         }
         return tmp;
     }
@@ -130,18 +130,18 @@ pcb_t * outProcQ(pcb_t **tp, pcb_t *p) {
     if (*tp != NULL) {
         /* La lista non è vuota */
         if((*tp)->p_next == (*tp)->p_prev) {
+            /* La lista ha un solo elemento */
             if(*tp == p) {
-                /* La lista ha un solo elemento che coincide con p*/
+                /* L'unico elemento coincide con p*/
                 *tp = NULL;
-                return p;
+                return *tp;
             } else {
-                /* La lista ha un solo elemento e non coincide con p */
+                /* L'unico elemento non coincide con p */
                 return NULL;
             }
         } else {
             /* La lista ha più di un elemento */
-            pcb_t *tmp;
-            tmp = *tp;
+            pcb_t *tmp = *tp;
             do {
                 /* Itera su tutti gli elementi di tmp, alias di *tp */
                 if(tmp == p) {
@@ -149,7 +149,7 @@ pcb_t * outProcQ(pcb_t **tp, pcb_t *p) {
                     /* Modifica i puntatori degli altri elementi */
                     (tmp->p_prev)->p_next = tmp->p_next;
                     (tmp->p_next)->p_prev = tmp->p_prev;
-                    return p;
+                    return tmp;
                 }
                 tmp = tmp->p_next;
             } while (tmp != *tp);
