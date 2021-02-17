@@ -129,12 +129,12 @@ pcb_t * removeProcQ(pcb_t **tp) {
 pcb_t * outProcQ(pcb_t **tp, pcb_t *p) {
     if (*tp != NULL) {
         /* La lista non è vuota */
-        if((*tp)->p_next == (*tp)->p_prev) {
+        if((*tp) == (*tp)->p_next && (*tp) == (*tp)->p_prev) {
             /* La lista ha un solo elemento */
             if(*tp == p) {
                 /* L'unico elemento coincide con p*/
                 *tp = NULL;
-                return *tp;
+                return p;
             } else {
                 /* L'unico elemento non coincide con p */
                 return NULL;

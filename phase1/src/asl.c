@@ -16,8 +16,10 @@ int insertBlocked(int *semAdd, pcb_t *p) {
             /* Si aggiunge p nella coda dei processi bloccati da semAdd */
             /* Aggiungiamo in coda */
             p->p_semAdd = tmp->s_semAdd;
-            (tmp->s_procQ)->p_next = p;
+            ((tmp->s_procQ)->p_next)->p_prev = p;
+            p->p_next = (tmp->s_procQ)->p_next;
             p->p_prev = tmp->s_procQ;
+            (tmp->s_procQ)->p_next = p;
             tmp->s_procQ = p;
             return 0;
         }
@@ -62,15 +64,15 @@ pcb_t * removeBlocked(int *semAdd) {
             /* tmp è il semaforo ricercato */
             /* In teoria tmp ha almeno un processo figlio */
             /* Prende il processo in testa */
-            pcb_t *p = (tmp->s_procQ)->p_prev;
+            pcb_t *p = (tmp->s_procQ)->p_next;
             /* Cancella il processo */
             if(p == p->p_next && p == p->p_prev) {
                 /* Il semaforo ha solo un processo */
                 tmp->s_procQ = NULL;
             } else {
                 /* Il semaforo ha più processi in coda */
-                (tmp->s_procQ)->p_prev = p->p_prev;
-                (p->p_prev)->p_next = tmp->s_procQ;
+                (((tmp->s_procQ)->p_next)->p_next)->p_prev = tmp->s_procQ;
+                (tmp->s_procQ)->p_next = p->p_next;
             }
             if(tmp->s_procQ == NULL) {
                 /* Cancella il semaforo */
@@ -136,7 +138,7 @@ pcb_t * headBlocked(int *semAdd) {
     semd_t *tmp = semd_h;
     while(tmp != NULL) {
         if(tmp->s_semAdd == semAdd) {
-            return (tmp->s_procQ)->p_prev;
+            return (tmp->s_procQ)->p_next;
         }
         tmp = tmp->s_next;
     }
