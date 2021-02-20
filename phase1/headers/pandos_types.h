@@ -40,7 +40,7 @@ typedef struct semd_t {
 
     struct semd_t *s_next;							/* ptr to next element on queue 							*/
     int *s_semAdd;    								/* ptr to the semaphore										*/
-    pcb_PTR s_procQ;    							/* ptr to tail of the queue of procs. blocked on this sem.	*/
+    pcb_PTR s_procQ;    							/* ptr to tail of the queue of procces blocked on this sem.	*/
 
 } semd_t, *semd_PTR;
 
