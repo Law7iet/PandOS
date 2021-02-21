@@ -4,7 +4,7 @@ Progetto del corso di Sistemi Operativi dell'Università di Bologna, Laurea Trie
 ## Istruzioni per il test
 Prerequisiti:
 - Sistema operativo basato su kernel Linux.
-- (uMPS3)[http://wiki.virtualsquare.org/#!education/tutorials/umps/installation.md].
+- [uMPS3](http://wiki.virtualsquare.org/#!education/tutorials/umps/installation.md).
 
 Installazione:
 - Aprire la shell testuale e posizionarsi nella directory `phase1`.
