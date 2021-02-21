@@ -24,22 +24,22 @@ Caratteristiche delle liste:
 I metodi principali sono la rimozione e l'inserimento dalla lista di un elemento.  
 Nel caso in cui la lista sia di tipo **FIFO**, la rimozione e l'interimento comporta i seguenti comportamenti:
 
-![FIFO_remove_image](./images/SO-FIFO_remove.png)
+![FIFO_remove_image](./images/SO-FIFO_Remove.png)
 
 Nella rimozione bisogna modificare il puntatore *next* dell'elemento precedente all'elemento rimosso e il puntatore *prev* dell'elemento successore all'elemento rimosso.
 
-![FIFO_insert_image](./images/SO-FIFO_insert.png)
+![FIFO_insert_image](./images/SO-FIFO_Insert.png)
 
 Nell'inserimento bisogna modificare tutti i puntatori dell'elemento precedenete e successore all'elemento inserito.
 
 Nel caso in cui la lista sia di tipo **LIFO**, ossia nelle liste dei processi e semafori liberi, la rimozione e l'inserimento comporta i seguenti comportamenti:
 
-![LIFO_remove_image](./images/SO-LIFO_remove.png)
+![LIFO_remove_image](./images/SO-LIFO_Remove.png)
 
 Nella rimozione bisogna modificare il puntatore *next* dell'elemento precedente all'elemento rimosso e il puntatore *prev* dell'elemento successore all'elemento rimosso.
 Nel caso sia una rimozione in testa, come nell'immagine, si modifica la *sentinella* verso il suo successore e cancellare il puntatore *prev* della nuova sentinella (mettere a *NULL*).
 
-![LIFO_insert_image](./images/SO-LIFO_insert.png)
+![LIFO_insert_image](./images/SO-LIFO_Insert.png)
 
 Nell'inserimento bisogna modificare la *sentinella* verso il nuovo elemento e modificare i puntatori l'elemento della vecchia sentinella con quella nuova.
 
