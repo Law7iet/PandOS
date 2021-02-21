@@ -1,6 +1,4 @@
-PROVA
 kernel
-kernel.*.umps
 *.umps
 *.o
 *.vscode
