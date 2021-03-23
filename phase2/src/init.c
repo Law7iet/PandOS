@@ -46,7 +46,6 @@ int main() {
     procTest->p_time = 0;
     procTest->p_semAdd = NULL;
     procTest->p_supportStruct = NULL;
-
     /* Attivazione interrupt */
     procTest->p_s.gpr[0] = 1;
     procTest->p_s.gpr[8] = 1;
@@ -68,7 +67,5 @@ int main() {
     procTest->p_s.s_pc = (memaddr) test;
     /* Chiamata dello scheduler */
     scheduler();
-    /* A che serve?
-    setTIMER(1);
-    */
+   return 0;
 }

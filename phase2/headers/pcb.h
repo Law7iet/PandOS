@@ -1,3 +1,6 @@
+#ifndef PCB
+#define PCB
+
 /* 1.
 Inizializza la pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
 Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati. */
@@ -59,3 +62,5 @@ Rimuove il PCB puntato da p dalla lista dei figli del padre.
 Se il PCB puntato da p non ha un padre, restituisce NULL, altrimenti restituisce l’elemento rimosso (cioè p).
 A differenza della removeChild, p può trovarsi in una posizione arbitraria (ossia non è necessariamente il primo figlio del padre). */
 pcb_t * outChild(pcb_t* p);
+
+#endif
