@@ -32,6 +32,7 @@ int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0) {
     }
 }
 
+
 void SYSCALL(TERMINATEPROCESS, 0, 0, 0) {
     if(currentProc != NULL) {
         pcb_t *tmp = currentProc;
@@ -47,35 +48,42 @@ void SYSCALL(TERMINATEPROCESS, 0, 0, 0) {
 }
 
 void SYSCALL(PASSEREN, int *semaddr, 0, 0) {
-    (*semaddr)++;
-    pcb_t *process = removeBlocked(semaddr)
-    if(process != NULL) {
-        insertProcQ(&ReadyQueue, process);
-    }
-}
-
-void SYSCALL(VERHOGEN, int *semaddr, 0, 0) {
     (*semaddr)--;
     if(*semaddr < 0) {
         currentProcess->p_semAdd = sem;
         insertBlocked(sem, currentProcess);
         currentProcess = NULL;
+    }    
+}
+
+void SYSCALL(VERHOGEN, int *semaddr, 0, 0) {
+    (*semaddr)++;
+    pcb_t *process = removeBlocked(semaddr);
+    if(process != NULL) {
+        insertProcQ(&ReadyQueue, process);
     }
+}
+
+int SYSCALL(IOCOMMAND, int intlNo, int dnum, int termRead) {    
+    int index=intlNo-2;
+    if(termRead==true)
+        index++;    
+    softBlockCount++;    
+    SYSCALL(PASSEREN,sem[index*dnum+1],0,0);
+    scheduler();
 
 }
 
-int SYSCALL(IOCOMMAND, int intlNo, int dnum, int termRead) {
-
-}
-
-int SYSCALL(GETCPUTIME, 0, 0, 0) {
-
+int SYSCALL(GETCPUTIME, 0, 0, 0) {    
+    return currentProc->p_time;
 }
 
 int SYSCALL(WAITCLOCK, 0, 0, 0) {
-
+    softBlockCount++;
+    SYSCALL(PASSEREN,sem[0],0,0);
+    scheduler();
 }
 
 support_t* SYSCALL(GETSUPPORTPTR, 0, 0, 0) {
-
+    return currentProc->p_supportStruct;
 }
