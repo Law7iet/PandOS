@@ -1,6 +1,14 @@
 #ifdef EXCEPTIONS
 #define EXCEPTIONS
 
+#include "pcb.h"
+#include "asl.h"
+#include "pandos_types.h"
+#include "scheduler.h"
+
+extern void exceptionHandler();
+extern void systemcallHandler();
+
 int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0);
 void SYSCALL(TERMINATEPROCESS, 0, 0, 0);
 void SYSCALL(PASSEREN, int *semaddr, 0, 0);

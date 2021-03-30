@@ -1,9 +1,4 @@
-#include "pandos_const.h"
-#include "pandos_types.h"
-#include "asl.h"
-#include "pcb.h"
-#include "p2test.h"
-#include "scheduler.h"
+#include "init.h"
 
 /* Sezione 3.1 - dichiarazione delle variabili globali */
 int processCount;
@@ -14,15 +9,14 @@ int sem[SEMAPHORELENGTH];
 
 int main() {
     /* Sezione 3.2 - popolazione del Pass Up Vector */
-    passupvector_t *passUpVector = 0x0FFFF900;
-    passUpVector->tlb_refill_handler = (memaddr) uTLB_RefillHandler;
-    passUpVector->tlb_refill_stackPtr = 0x20001000;
-    passUpVector->exception_handler = NULL;
-    passUpVector->exception_stackPtr = 0x20001000;
+    *((memaddr*) 0x0FFFF900) = (memaddr) uTLB_RefillHandler;
+    *((memaddr*) 0x0FFFF904) = 0x20001000;
+    *((memaddr*) 0x0FFFF908) = (memaddr) systemcallHandler;
+    *((memaddr*) 0x0FFFF90c) = 0x20001000;
 
     /* Sezione 3.3 - inizializzazione delle strutture di dati */
     initPcbs();
-    initSemd();
+    initASL();
 
     /* Sezione 3.4 - inizializzazione delle variabili del kernel */
     processCount = 0;
@@ -47,7 +41,7 @@ int main() {
     procTest->p_semAdd = NULL;
     procTest->p_supportStruct = NULL;
     /* Attivazione interrupt */
-    procTest->p_s.gpr[0] = 1;
+    procTest->p_s.gpr[2] = 1;
     procTest->p_s.gpr[8] = 1;
     procTest->p_s.gpr[9] = 1;
     procTest->p_s.gpr[10] = 1;
@@ -59,13 +53,18 @@ int main() {
     /* Attivazione PLT */
     procTest->p_s.gpr[27] = 1;
     /* Attivazione Kernel-mode */
-    procTest->p_s.gpr[3] = 1;
+    procTest->p_s.gpr[3] = 0;
     /* SP impostato con RAMTOP */
     int tmp = RAMTOP(tmp);
     procTest->p_s.gpr[26] = tmp;
     /* PC impostato con test */
-    procTest->p_s.s_pc = (memaddr) test;
-    /* Chiamata dello scheduler */
+    procTest->p_s.pc_epc = (memaddr) test;
+    /* Inserimento del processo nella coda ready */
+    insertProcQ(&readyQueue, procTest);
+    /* Aumento del contatore dei processi in coda */
+    processCount++;
+
+    /* Sezione 3.7 - chiamata dello scheduler */
     scheduler();
    return 0;
 }

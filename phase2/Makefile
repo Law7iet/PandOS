@@ -24,7 +24,7 @@ LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript
 VPATH = $(UMPS3_DATA_DIR)
 
 # Altre variabili
-OBJFILES = $(OBJDIR)p1test.o $(OBJDIR)asl.o $(OBJDIR)pcb.o $(OBJDIR)crtso.o $(OBJDIR)libumps.o
+OBJFILES = $(OBJDIR)asl.o $(OBJDIR)init.o $(OBJDIR)p2test.o $(OBJDIR)pcb.o $(OBJDIR)scheduler.o $(OBJDIR)crtso.o $(OBJDIR)libumps.o
 SRCDDIR = src/
 OBJDIR = obj/
 
@@ -35,7 +35,7 @@ all : kernel.core.umps
 kernel.core.umps : kernel
 	umps3-elf2umps -k kernel
 
-kernel : p1test.o asl.o pcb.o crtso.o libumps.o
+kernel : init.o asl.o pcb.o p2test.o scheduler.o crtso.o libumps.o
 	$(LD) -o kernel $(OBJFILES) $(LDFLAGS)
 
 crtso.o : 

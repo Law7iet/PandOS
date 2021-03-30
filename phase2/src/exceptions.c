@@ -2,6 +2,60 @@
 #include "pcb.h"
 #include "init.h"
 
+/* gestione delle SYSCALL */
+void exceptionHandler() {
+    state_t *stato;
+    stato = BIOSDATAPAGE;
+    currentProc->p_s = stato;
+    codice = currentProc->p_s.cause;
+    if(codice == 0) {
+        /* Interrupt */
+    } else if(codice >= 1 && codice <= 3) {
+        /* TLB Trap */
+    } else if(codice == 8) {
+        /* System Call */
+        syscallHandler();
+    } else {
+        /* Program Trap */
+    }
+}
+
+void systemcallHandler() {
+    /* controllo che sia in kernel mode */
+    state_t *stato;
+    stato = BIOSDATAPAGE;
+    if(currentProc->p_s.gpr[3] == 0) {
+         /* leggere a0 e in base al suo valore, eseguire una SYSCALL */
+         switch(stato->s_a0) {
+            case 1:
+            SYSCALL(CREATEPROCESS, stato->s_a1, stato->s_a2, stato->s_a3);
+            break;
+            case 2:
+            SYSCALL(TERMPROCESS, 0, 0, 0);
+            break;
+            case 3:
+            SYSCALL(PASSEREN, stato->s_a1, 0, 0);
+            break;
+            case 4:
+            SYSCALL(VERHOGEN, stato->s_a1, 0, 0);
+            break;
+            case 5:
+            SYSCALL(IOWAIT, stato->s_a1, stato->s_a2, stato->s_a3);
+            break;
+            case 6:
+            SYSCALL(GETTIME, 0, 0, 0);
+            break;
+            case 7:
+            SYSCALL(CLOCKWAIT, 0, 0, 0);
+            break;
+            case 8:
+            SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+            break;
+         }
+    }
+   
+}
+
 int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0) {
     pcb_t *newProcess = allocPcb();
     if(newProcess == NULL) {
@@ -32,8 +86,7 @@ int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0) {
     }
 }
 
-
-void SYSCALL(TERMINATEPROCESS, 0, 0, 0) {
+void SYSCALL(TERMPROCESS, 0, 0, 0) {
     if(currentProc != NULL) {
         pcb_t *tmp = currentProc;
         freePcb(currentProc);
@@ -64,7 +117,7 @@ void SYSCALL(VERHOGEN, int *semaddr, 0, 0) {
     }
 }
 
-int SYSCALL(IOCOMMAND, int intlNo, int dnum, int termRead) {    
+int SYSCALL(IOWAIT, int intlNo, int dnum, int termRead) {    
     int index=intlNo-2;
     if(termRead==true)
         index++;    
@@ -74,11 +127,11 @@ int SYSCALL(IOCOMMAND, int intlNo, int dnum, int termRead) {
 
 }
 
-int SYSCALL(GETCPUTIME, 0, 0, 0) {    
+int SYSCALL(GETTIME, 0, 0, 0) {    
     return currentProc->p_time;
 }
 
-int SYSCALL(WAITCLOCK, 0, 0, 0) {
+int SYSCALL(CLOCKWAIT, 0, 0, 0) {
     softBlockCount++;
     SYSCALL(PASSEREN,sem[0],0,0);
     scheduler();
