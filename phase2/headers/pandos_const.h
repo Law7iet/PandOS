@@ -176,5 +176,4 @@
 #define POOLSIZE (UPROCMAX * 2)
 /* End of Mikeyg constants */
 
-#define SEMAPHORELENGTH 49
 #endif

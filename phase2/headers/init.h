@@ -3,8 +3,10 @@
 
 #include "asl.h"
 #include "pcb.h"
+#include "tools.h"
 #include "p2test.h"
 #include "scheduler.h"
+#include "exceptions.h"
 
 extern int processCount;
 extern int softBlockCount;

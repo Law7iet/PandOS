@@ -3,11 +3,13 @@
 
 #include "pcb.h"
 #include "asl.h"
-#include "pandos_types.h"
+#include "init.h"
 #include "scheduler.h"
+#include "tools.h"
+#include "interrupts.h"
 
-extern void exceptionHandler();
-extern void systemcallHandler();
+extern void exceptionsHandler();
+extern void systemcallsHandler();
 
 int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0);
 void SYSCALL(TERMINATEPROCESS, 0, 0, 0);
