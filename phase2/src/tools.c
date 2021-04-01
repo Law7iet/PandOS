@@ -1,5 +1,4 @@
-void get_bits(int n) {
-    int bits[32];
+void decToBin(int bits[], int n) {
     int i = 0;
     while (n > 0) {
         bits[i] = n % 2;
@@ -8,11 +7,16 @@ void get_bits(int n) {
     }
 }
 
-int get_num(int bits[]) {
-    int num = 0, i, mult = 1;
-    for(i = 0; i < 32; i++) {
-        num = num + bits[i] * mult;
-        mult = mult * 2;
+int binToDec(int bits[], int first, int last) {
+    int num = 0;
+    int mul = 1;
+    int i;
+    for(int i = 0; i < first; i++) {
+      mul = mul * 2;
+    }
+    for(int i = first; i < last; i++) {
+        num = num + (bits[i] * mul);
+        mul = mul * 2;
     }
     return num;
 }

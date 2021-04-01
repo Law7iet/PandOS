@@ -5,7 +5,9 @@
 void exceptionsHandler() {
     /* Calcolo della causa dello stato del processo che ha sollevato l'eccezione */
     state_t *exceptionState = (state_t*) BIOSDATAPAGE;
-    int exceptionCauseCode = get_num(get_bits(exceptionState->cause), 2, 6);
+    int bits[REGISTERLENGTH] = {0};
+    DecToBin(exceptionState->cause);
+    int exceptionCauseCode = get_num(bits, 2, 6);
 
     /* In base al suo valore, solleva uno specifico gestore */
     if(exceptionCauseCode == 0) {
