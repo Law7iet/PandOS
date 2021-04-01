@@ -42,7 +42,7 @@ void scheduler() {
         pcb_t *readyProc = removeProcQ(&readyQueue);
         currentProc = readyProc;
         /* Carica il Processor Local Timer di 5 millisecondi*/
-        LDIT(5000);
+        setTIMER(5000);
         /* Carica lo stato del processore trovato nel processo estratto */
         LDST(&(currentProc->p_s));
     }

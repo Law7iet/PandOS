@@ -11,7 +11,7 @@ int main() {
     /* Sezione 3.2 - popolazione del Pass Up Vector */
     *((memaddr*) 0x0FFFF900) = (memaddr) uTLB_RefillHandler;
     *((memaddr*) 0x0FFFF904) = 0x20001000;
-    *((memaddr*) 0x0FFFF908) = (memaddr) systemcallHandler;
+    *((memaddr*) 0x0FFFF908) = (memaddr) exceptionsHandler;
     *((memaddr*) 0x0FFFF90c) = 0x20001000;
 
     /* Sezione 3.3 - inizializzazione delle strutture di dati */
@@ -66,5 +66,6 @@ int main() {
 
     /* Sezione 3.7 - chiamata dello scheduler */
     scheduler();
-   return 0;
+
+    return 0;
 }
