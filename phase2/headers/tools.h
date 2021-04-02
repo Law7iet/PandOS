@@ -1,4 +1,4 @@
-#ifdef TOOLS
+#ifndef TOOLS
 #define TOOLS
 
 #include "asl.h"
@@ -15,6 +15,5 @@ extern semd_t *sem[SEMAPHORELENGTH];
 
 void decToBin(int bits[], int n);
 int binToDec(int bits[], int first, int last);
-void terminate_proc(pcb_t *proc);
 
 #endif

@@ -1,4 +1,4 @@
-#ifdef EXCEPTIONS
+#ifndef EXCEPTIONS
 #define EXCEPTIONS
 
 #include "pcb.h"
@@ -16,14 +16,14 @@ extern semd_t *sem[SEMAPHORELENGTH];
 
 void exceptionsHandler();
 void systemcallsHandler();
-void passUpOrDie();
-int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0);
-void SYSCALL(TERMINATEPROCESS, 0, 0, 0);
-void SYSCALL(PASSEREN, int *semaddr, 0, 0);
-void SYSCALL(VERHOGEN, int *semaddr, 0, 0);
-int SYSCALL(IOCOMMAND, int intlNo, int dnum, int termRead);
-int SYSCALL(GETCPUTIME, 0, 0, 0);
-int SYSCALL(WAITCLOCK, 0, 0, 0);
-support_t* SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+void passUpOrDie(int i);
+int createProcess(state_t *statep, support_t *supportp);
+void terminateProcess();
+void passeren(int *semaddr);
+void verhogen(int *semaddr);
+int ioWait(int intlNo, int dnum, int termRead);
+int getTime();
+void clockWait();
+support_t* getSupportPtr();
 
 #endif

@@ -3,6 +3,8 @@
 #include "asl.h"
 #include "tools.h"
 #include "interrupts.h"
+#include <umps3/umps/libumps.h>
+#include "scheduler.h"
 
 #define SEMAPHORELENGTH 49
 #define REGISTERLENGTH  32
@@ -13,74 +15,7 @@ extern pcb_t *readyQueue;
 extern pcb_t *currentProc;
 extern semd_t *sem[SEMAPHORELENGTH];
 
-/* Gestore delle eccezioni */
-void exceptionsHandler() {
-    /* Calcolo della causa dello stato del processo che ha sollevato l'eccezione */
-    state_t *exceptionState = (state_t*) BIOSDATAPAGE;
-    int bits[REGISTERLENGTH] = {0};
-    DecToBin(exceptionState->cause);
-    int exceptionCauseCode = binToDec(bits, 2, 6);
-
-    /* In base al suo valore, solleva uno specifico gestore */
-    if(exceptionCauseCode == 0) {
-        interruptsHandler();
-    }
-    else if(exceptionCauseCode == 8) {
-        systemCallsHandler();
-    }
-    else if((exceptionCauseCode >= 1 && exceptionCauseCode <= 3) || (exceptionCauseCode >= 9 && exceptionCauseCode <= 12)) {
-        passUpOrDie();
-    }
-}
-
-/* Gestore delle SYSCALL */
-void systemCallsHandler() {
-    /* Controllo che sia in kernel mode */
-    int currentProcessStatus = currentProc->p_s.status;
-    int *bits = DecToBin(currentProcessStatus);
-    /* Il processo corrente è in user mode */
-    if(bits[3] == 1) {
-        /* Si uccide il processo */
-        SYSCALL(TERMPROCESS, 0, 0, 0);
-    }
-    /* Il processo corrente è in kernel mode */
-    else {
-        /* In base al valore di a0 si esegue una specifica systemcall */
-        switch(currentProc->p_s.gpr[3]) {
-            case 1:
-            SYSCALL(CREATEPROCESS, currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]);
-            break;
-            case 2:
-            SYSCALL(TERMPROCESS, 0, 0, 0);
-            break;
-            case 3:
-            SYSCALL(PASSEREN, currentProc->p_s.gpr[4], 0, 0);
-            break;
-            case 4:
-            SYSCALL(VERHOGEN, currentProc->p_s.gpr[4], 0, 0);
-            break;
-            case 5:
-            SYSCALL(IOWAIT, currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]);
-            break;
-            case 6:
-            SYSCALL(GETTIME, 0, 0, 0);
-            break;
-            case 7:
-            SYSCALL(CLOCKWAIT, 0, 0, 0);
-            break;
-            case 8:
-            SYSCALL(GETSUPPORTPTR, 0, 0, 0);
-            break;
-            /* Se a0 è maggiore di 8, si chiama il passUpOrDie */
-            default:
-            if(currentProc->p_s.gpr[3] >= 9) {
-                passUpOrDie();
-            }
-        }  
-    }
-}
-
-int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0) {
+int createProcess(state_t *statep, support_t *supportp) {
     /* Nuovo processo */
     pcb_t *newProcess = allocPcb();
     /* Il nuovo processo è vuoto */
@@ -95,7 +30,7 @@ int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0) {
         processCount++;
         
         /* Inizializzazione dei campi */
-        insertChild(&(currentProc), newProcess);
+        insertChild(currentProc, newProcess);
         
         newProcess->p_s.entry_hi = statep->entry_hi;
         newProcess->p_s.cause = statep->cause;
@@ -120,17 +55,40 @@ int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0) {
     }
 }
 
-void SYSCALL(TERMPROCESS, 0, 0, 0) {
-    /* Il processo corrente esiste */
-    if(currentProc != NULL) {
-        /* Coda dei processi da eliminare */
-        pcb_t *queue = currentProc;
-        /* Cancella il processo corrente e i suoi figli */
-        void recTerminateProcess(pcb_t *currentProc);
-        scheduler();
+void terminateProcess(pcb_t *proc) {
+    if(proc != NULL) {        
+        /* Se il processo ha figli, si chiama la funzione ricorsivamente sui figli */
+        while(!emptyChild(proc)) {
+            pcb_t *tmp = outChild(proc);
+            terminateProcess(tmp);
+        }
+
+        /* Aggiornamento dei semafori */
+        if(proc->p_semAdd != NULL) {
+            /* Flag che indica se il processso è bloccato su un semaforo device */
+            int BlockedOnSemDev = checkBlockedOnSemDev(proc->p_semAdd);
+            /* Il processo non è bloccato su un semaforo */
+            if (*(proc->p_semAdd) < 0 && !BlockedOnSemDev) {
+                /* Si aggiorna il valore del semaforo */
+                if(*(proc->p_semAdd) < 0) {
+                    *(proc->p_semAdd) = *(proc->p_semAdd) + 1;
+                }
+            }
+            /* Il processo è bloccato su un semaforo */
+            else {
+                softBlockCount--;    
+            }
+            outBlocked(proc);
+        }
+
+        /* Cancellazione del processo */
+        outProcQ(&readyQueue, proc);
+        freePcb(proc);
+        processCount--;
+    }
 }
 
-void SYSCALL(PASSEREN, int *semaddr, 0, 0) {
+void passeren(int *semaddr) {
     *semaddr = *semaddr - 1;
     /* Il processo viene bloccato */
     if(*semaddr < 0) {
@@ -138,49 +96,126 @@ void SYSCALL(PASSEREN, int *semaddr, 0, 0) {
         unsigned int tmp;
 
         currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
-        currentProc->p_s = (state_t *) BIOSDATAPAGE;
-        currentProc->p_time = current->p_time + STCK(tmp)
-        insertBlocked(semaddr, currentProcess);
+        currentProc->p_s = *((state_t *) BIOSDATAPAGE);
+        currentProc->p_time = currentProc->p_time + STCK(tmp);
+        insertBlocked(semaddr, currentProc);
 
-        currentProcess = NULL;
+        currentProc = NULL;
         scheduler();
     }
 }
 
-void SYSCALL(VERHOGEN, int *semaddr, 0, 0) {
+void verhogen(int *semaddr) {
     (*semaddr)++;
     pcb_t *process = removeBlocked(semaddr);
     if(process != NULL) {
-        insertProcQ(&ReadyQueue, process);
+        insertProcQ(&readyQueue, process);
     }
 }
 
-int SYSCALL(IOWAIT, int intlNo, int dnum, int termRead) {
+int ioWait(int intlNo, int dnum, int termRead) {
     /* Indice del semaforo */    
     int index = intlNo - 3;
-    if(termRead == true) {
+    if(termRead == TRUE) {
         index++;
     }
-    softBlockCount++;    
-    SYSCALL(PASSEREN, sem[(index * dnum) + 1], 0, 0);
+    softBlockCount++;
+    currentProc->p_s.gpr[1] = 0;
+    passeren(sem[(index * dnum) + 1]->s_semAdd);
+    return 0;
 }
 
-int SYSCALL(GETTIME, 0, 0, 0) {
+int getTime() {
     currentProc->p_s.gpr[1] = currentProc->p_time;
     return currentProc->p_time;
 }
 
-int SYSCALL(CLOCKWAIT, 0, 0, 0) {
+void clockWait() {
     softBlockCount++;
-    SYSCALL(PASSEREN, sem[0], 0, 0);
-    scheduler();
+    passeren(sem[0]->s_semAdd);
 }
 
-support_t* SYSCALL(GETSUPPORTPTR, 0, 0, 0) {
-    currentProc->p_s.gpr[1] = (support_t *) currentProc->p_supportStruct);
+support_t* getSupportPtr() {
+    currentProc->p_s.gpr[1] = ((support_t *) currentProc->p_supportStruct);
     return currentProc->p_supportStruct;
 }
 
-void passUpOrDie() {
+void passUpOrDie(int i) {
+    if(currentProc->p_supportStruct == NULL) {
+        terminateProcess(currentProc);
+    } else {
+        currentProc->p_supportStruct->sup_exceptState[i] = *((state_t *) BIOSDATAPAGE);
+        LDCXT(currentProc->p_s.gpr[26], currentProc->p_s.status, currentProc->p_s.pc_epc);
+        *((state_t *) BIOSDATAPAGE) = currentProc->p_s;
+        exceptionsHandler();
+    }
 
+}
+
+/* Gestore delle SYSCALL */
+void systemCallsHandler() {
+    /* Controllo che sia in kernel mode */
+    int currentProcessStatus = currentProc->p_s.status;
+    int bits[REGISTERLENGTH] = {0};
+    decToBin(bits, currentProcessStatus);
+    /* Il processo corrente è in user mode */
+    if(bits[3] == 1) {
+        /* Si uccide il processo */
+        SYSCALL(2, 0, 0, 0);
+    }
+    /* Il processo corrente è in kernel mode */
+    else {
+        switch(currentProc->p_s.gpr[3]) {
+        /* currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]); */
+            case 1:
+                createProcess(currentProc->p_s.gpr[4], currentProc->p_s.gpr[5]);
+                break;
+            case 2:
+                if(currentProc != NULL) {
+                    terminateProcess(currentProc);
+                }
+                scheduler();
+                break;
+            case 3:
+                passeren(currentProc->p_s.gpr[4]);
+                break;
+            case 4:
+                verhogen(currentProc->p_s.gpr[4]);
+                break;
+            case 5:
+                ioWait(currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]);
+                break;
+            case 6:
+                getTime();
+                break;
+            case 7:
+                clockWait();
+                break;
+            case 8:
+                getSupportPtr();
+                break;
+            default:
+                passUpOrDie(1);
+        }
+    }
+}
+
+/* Gestore delle eccezioni */
+void exceptionsHandler() {
+    /* Calcolo della causa dello stato del processo che ha sollevato l'eccezione */
+    state_t *exceptionState = (state_t*) BIOSDATAPAGE;
+    int bits[REGISTERLENGTH] = {0};
+    decToBin(bits, exceptionState->cause);
+    int exceptionCauseCode = binToDec(bits, 2, 6);
+
+    /* In base al suo valore, solleva uno specifico gestore */
+    if(exceptionCauseCode == 0) {
+        interruptsHandler();
+    }
+    else if(exceptionCauseCode == 8) {
+        systemCallsHandler();
+    }
+    else if((exceptionCauseCode >= 1 && exceptionCauseCode <= 3) || (exceptionCauseCode >= 9 && exceptionCauseCode <= 12)) {
+        passUpOrDie(0);
+    }
 }

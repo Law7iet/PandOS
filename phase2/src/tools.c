@@ -42,36 +42,3 @@ int checkBlockedOnSemDev(int* semaphore) {
     }
     return 0;
 }
-
-void recTerminateProcess(pcb_t *proc) {
-    if(proc != NULL) {        
-        /* Se il processo ha figli, si chiama la funzione ricorsivamente sui figli */
-        while(!emptyChild(proc)) {
-            pcb_t *tmp = outChild(proc);
-            recTerminateProcess(tmp);
-        }
-
-        /* Aggiornamento dei semafori */
-        if(proc->p_semAdd != NULL) {
-            /* Flag che indica se il processso è bloccato su un semaforo device */
-            int BlockedOnSemDev = checkBlockedOnSemDev(proc->p_semAdd);
-            /* Il processo non è bloccato su un semaforo */
-            if (*(proc->p_semAdd) < 0 && !BlockedOnSemDev) {
-                /* Si aggiorna il valore del semaforo */
-                if(*(proc->p_semAdd) < 0) {
-                    *(proc->p_semAdd) = *(proc->p_semAdd) + 1;
-                }
-            }
-            /* Il processo è bloccato su un semaforo */
-            else {
-                softBlockCount--;    
-            }
-            outBlocked(proc);
-        }
-
-        /* Cancellazione del processo */
-        outProcQ(&readyQueue, proc);
-        freePcb(proc);
-        processCount--;
-    }
-}
