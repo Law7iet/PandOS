@@ -19,28 +19,78 @@ void interruptsHandler() {
     } else if(bits[2] == 1) {
         /* IT */
         LDIT(100000);
-        while(0) {
-            // unblock all pcb blocked on pseudo-clock semaphore 
+        while(!emptyProcQ(sem[0]->s_procQ)) {
+            // unblock all pcb blocked on pseudo-clock semaphore
+            verhogen(sem[0]);
         }
         sem[0] = 0;
         LDST((state_t *) BIOSDATAPAGE);
 
     } else if(bits[3] == 1) {
         /* Disk Device */
+        deviceInterruptHandler(3);
     } else if(bits[4] == 1) {
         /* Flash Device */
+        deviceInterruptHandler(4);
     } else if(bits[5] == 1) {
         /* Network Device */
+        deviceInterruptHandler(5);
     } else if(bits[6] == 1) {
         /* Printer Device */
+        deviceInterruptHandler(6);
     } else if(bits[7] == 1) {
         /* Terminal Device */
+        deviceInterruptHandler(7);
     }
 }
 
 void deviceInterruptHandler(int IntLineNo) {
     /* Calcolo ddell'indirizzo del registro del device */
-    dtpreg *devRegister;
+    int DevNo = getDeviceNumber(IntLineNo);
+    dtpreg *devRegister = 0x1000.0054 + ((IntLineNo - 3) * 0x80) + (DevNo * 0x10);
     int devStatus = devRegister->status;
     devRegister->command = ACK;
+    pcb_t *unblockedProc =headBlocked(sem[(IntLineNo-3)*DevNo+1]);
+    unblockedProc->p_s.status = devStatus;
+    verhogen(sem[(IntLineNo-3)*DevNo+1]);
+    LDST(&(currentProc->p_s));
+}
+
+int getDeviceNumber(int IntLineNo){
+    int bitMap;
+    if(IntLineNo == 3){
+        bitMap = 0x1000.0040;
+        for(int i=0; i<8; i++){
+            if(bitMap+i == 1)
+                return i;
+        }
+    }
+    if(IntLineNo == 4){
+        bitMap = 0x1000.0040 + 0x04;
+        for(int i=0; i<8; i++){
+            if(bitMap+i == 1)
+                return i;
+        }
+    }
+    if(IntLineNo == 5){
+        bitMap = 0x1000.0040 + 0x08;
+        for(int i=0; i<8; i++){
+            if(bitMap+i == 1)
+                return i;
+        }
+    }
+    if(IntLineNo == 6){
+        bitMap = 0x1000.0040 + 0x0C;
+        for(int i=0; i<8; i++){
+            if(bitMap+i == 1)
+                return i;
+        }
+    }
+    if(IntLineNo == 7){
+        bitMap = 0x1000.0040 + 0x10;
+        for(int i=0; i<8; i++){
+            if(bitMap+i == 1)
+                return i;
+        }
+    }
 }
