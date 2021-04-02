@@ -23,10 +23,7 @@ int binToDec(int bits[], int first, int last) {
     int num = 0;
     int mul = 1;
     int i;
-    for(i = 0; i < first; i++) {
-      mul = mul * 2;
-    }
-    for(i = first; i < last; i++) {
+    for(i = first; i <= last; i++) {
         num = num + (bits[i] * mul);
         mul = mul * 2;
     }
