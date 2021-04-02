@@ -7,55 +7,43 @@
 #include "scheduler.h"
 #include "exceptions.h"
 
-int getDeviceNumber(int IntLineNo){
-    int bitMap;
+int getDeviceNumber(int IntLineNo) {
+    int bitMap = 0x10000040;
     int i;
-    if(IntLineNo == 3){
-        bitMap = 0x10000040;
-        for(i=0; i<8; i++){
-            if(bitMap+i == 1)
-                return i;
+
+    switch(IntLineNo) {
+        case 4:
+        bitMap = bitMap + 0x04;
+        break;
+        case 5:
+        bitMap = bitMap + 0x08;
+        break;
+        case 6:
+        bitMap = bitMap + 0x0C;
+        break;
+        case 7:
+        bitMap = bitMap + 0x10;
+        break;
+    }
+
+    for(i = 0; i < 8; i++) {
+        if(bitMap+i == 1) {
+            return i;
         }
     }
-    if(IntLineNo == 4){
-        bitMap = 0x10000040 + 0x04;
-        for(i=0; i<8; i++){
-            if(bitMap+i == 1)
-                return i;
-        }
-    }
-    if(IntLineNo == 5){
-        bitMap = 0x10000040 + 0x08;
-        for(i=0; i<8; i++){
-            if(bitMap+i == 1)
-                return i;
-        }
-    }
-    if(IntLineNo == 6){
-        bitMap = 0x10000040 + 0x0C;
-        for(i=0; i<8; i++){
-            if(bitMap+i == 1)
-                return i;
-        }
-    }
-    if(IntLineNo == 7){
-        bitMap = 0x10000040 + 0x10;
-        for(i=0; i<8; i++){
-            if(bitMap+i == 1)
-                return i;
-        }
-    }
+
+    return -1;
 }
 
 void deviceInterruptHandler(int IntLineNo) {
     /* Calcolo ddell'indirizzo del registro del device */
     int DevNo = getDeviceNumber(IntLineNo);
-    dtpreg_t *devRegister = 0x10000054 + ((IntLineNo - 3) * 0x80) + (DevNo * 0x10);
+    dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((IntLineNo - 3) * 0x80) + (DevNo * 0x10));
     int devStatus = devRegister->status;
     devRegister->command = ACK;
-    pcb_t *unblockedProc =headBlocked(sem[(IntLineNo-3)*DevNo+1]);
+    pcb_t *unblockedProc = headBlocked(sem[(IntLineNo-3)*DevNo+1]->s_semAdd);
     unblockedProc->p_s.status = devStatus;
-    verhogen(sem[(IntLineNo-3)*DevNo+1]);
+    verhogen(sem[(IntLineNo-3)*DevNo+1]->s_semAdd);
     LDST(&(currentProc->p_s));
 }
 

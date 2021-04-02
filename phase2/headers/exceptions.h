@@ -17,13 +17,14 @@ extern semd_t *sem[SEMAPHORELENGTH];
 void exceptionsHandler();
 void systemcallsHandler();
 void passUpOrDie(int i);
-int createProcess(state_t *statep, support_t *supportp);
+
+void createProcess(state_t *statep, support_t *supportp);
 void terminateProcess();
 void passeren(int *semaddr);
 void verhogen(int *semaddr);
-int ioWait(int intlNo, int dnum, int termRead);
-int getTime();
+void ioWait(int intlNo, int dnum, int termRead);
+void getTime();
 void clockWait();
-support_t* getSupportPtr();
+void getSupportPtr();
 
 #endif

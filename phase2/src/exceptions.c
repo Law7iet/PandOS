@@ -1,10 +1,10 @@
 #include "exceptions.h"
 #include "pcb.h"
 #include "asl.h"
-#include "tools.h"
 #include "interrupts.h"
 #include <umps3/umps/libumps.h>
 #include "scheduler.h"
+#include "tools.h"
 
 #define SEMAPHORELENGTH 49
 #define REGISTERLENGTH  32
@@ -15,14 +15,13 @@ extern pcb_t *readyQueue;
 extern pcb_t *currentProc;
 extern semd_t *sem[SEMAPHORELENGTH];
 
-int createProcess(state_t *statep, support_t *supportp) {
+void createProcess(state_t *statep, support_t *supportp) {
     /* Nuovo processo */
     pcb_t *newProcess = allocPcb();
     /* Il nuovo processo è vuoto */
     if(newProcess == NULL) {
         /* Salvataggio del valore di ritorno */
         currentProc->p_s.gpr[1] = -1;
-        return -1;
     }
     /* Il nuovo processo non è vuoto */
     else {
@@ -51,7 +50,6 @@ int createProcess(state_t *statep, support_t *supportp) {
 
         /* Salvataggio del valore di ritorno */
         currentProc->p_s.gpr[1] = 0;
-        return 0;
     }
 }
 
@@ -113,7 +111,7 @@ void verhogen(int *semaddr) {
     }
 }
 
-int ioWait(int intlNo, int dnum, int termRead) {
+void ioWait(int intlNo, int dnum, int termRead) {
     /* Indice del semaforo */    
     int index = intlNo - 3;
     if(termRead == TRUE) {
@@ -121,13 +119,13 @@ int ioWait(int intlNo, int dnum, int termRead) {
     }
     softBlockCount++;
     currentProc->p_s.gpr[1] = 0;
+    dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((intlNo - 3) * 0x80) + (dnum * 0x10));
+    currentProc->p_s.gpr[1] = devRegister->status;
     passeren(sem[(index * dnum) + 1]->s_semAdd);
-    return 0;
 }
 
-int getTime() {
+void getTime() {
     currentProc->p_s.gpr[1] = currentProc->p_time;
-    return currentProc->p_time;
 }
 
 void clockWait() {
@@ -135,9 +133,8 @@ void clockWait() {
     passeren(sem[0]->s_semAdd);
 }
 
-support_t* getSupportPtr() {
-    currentProc->p_s.gpr[1] = ((support_t *) currentProc->p_supportStruct);
-    return currentProc->p_supportStruct;
+void getSupportPtr() {
+    currentProc->p_s.gpr[1] = (unsigned int) currentProc->p_supportStruct;
 }
 
 void passUpOrDie(int i) {
@@ -168,7 +165,7 @@ void systemCallsHandler() {
         switch(currentProc->p_s.gpr[3]) {
         /* currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]); */
             case 1:
-                createProcess(currentProc->p_s.gpr[4], currentProc->p_s.gpr[5]);
+                createProcess((state_t *) currentProc->p_s.gpr[4], (support_t *) currentProc->p_s.gpr[5]);
                 break;
             case 2:
                 if(currentProc != NULL) {
@@ -177,10 +174,10 @@ void systemCallsHandler() {
                 scheduler();
                 break;
             case 3:
-                passeren(currentProc->p_s.gpr[4]);
+                passeren((int *) currentProc->p_s.gpr[4]);
                 break;
             case 4:
-                verhogen(currentProc->p_s.gpr[4]);
+                verhogen((int *) currentProc->p_s.gpr[4]);
                 break;
             case 5:
                 ioWait(currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]);
