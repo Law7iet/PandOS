@@ -16,5 +16,6 @@ extern semd_t *sem[SEMAPHORELENGTH];
 void decToBin(int bits[], int n);
 int binToDec(int bits[], int first, int last);
 int checkBlockedOnSemDev(int* semaphore);
+void copyProcessorState(state_t* dst, state_t* src);
 
 #endif

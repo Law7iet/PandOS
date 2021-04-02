@@ -50,13 +50,17 @@ void deviceInterruptHandler(int IntLineNo) {
 void interruptsHandler() {
     /* Calcolo della linea di interrupt del processo che ha sollevato l'eccezione */
     state_t *exceptionState = (state_t*) BIOSDATAPAGE;
-    int bits[REGISTERLENGTH] = {0};
+    int bits[REGISTERLENGTH];
+    int i;
+    for(i = 0; i < REGISTERLENGTH; i++) {
+        bits[i] = 0;
+    }
     decToBin(bits, exceptionState->cause);
     /* In base al suo valore, solleva uno specifico gestore */
     if(bits[1] == 1) {
         /* PLT */
         setTIMER(5000);
-        currentProc->p_s = *((state_t*) BIOSDATAPAGE);
+        copyProcessorState(&(currentProc->p_s), (state_t*) BIOSDATAPAGE);
         insertProcQ(&readyQueue, currentProc);
         scheduler();
     } else if(bits[2] == 1) {

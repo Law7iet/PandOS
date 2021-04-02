@@ -94,7 +94,7 @@ void passeren(int *semaddr) {
         unsigned int tmp;
 
         currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
-        currentProc->p_s = *((state_t *) BIOSDATAPAGE);
+        copyProcessorState(&(currentProc->p_s), (state_t *) BIOSDATAPAGE);
         currentProc->p_time = currentProc->p_time + STCK(tmp);
         insertBlocked(semaddr, currentProc);
 
@@ -141,19 +141,21 @@ void passUpOrDie(int i) {
     if(currentProc->p_supportStruct == NULL) {
         terminateProcess(currentProc);
     } else {
-        currentProc->p_supportStruct->sup_exceptState[i] = *((state_t *) BIOSDATAPAGE);
-        LDCXT(currentProc->p_s.gpr[26], currentProc->p_s.status, currentProc->p_s.pc_epc);
-        *((state_t *) BIOSDATAPAGE) = currentProc->p_s;
+        copyProcessorState(&(currentProc->p_supportStruct->sup_exceptState[i]), (state_t *) BIOSDATAPAGE);
+        LDCXT(currentProc->p_supportStruct->sup_exceptState[i].gpr[26], currentProc->p_supportStruct->sup_exceptState[i].status, currentProc->p_supportStruct->sup_exceptState[i].pc_epc);
         exceptionsHandler();
     }
-
 }
 
 /* Gestore delle SYSCALL */
 void systemCallsHandler() {
     /* Controllo che sia in kernel mode */
     int currentProcessStatus = currentProc->p_s.status;
-    int bits[REGISTERLENGTH] = {0};
+    int bits[REGISTERLENGTH];
+    int i;
+    for(i = 0; i < REGISTERLENGTH; i++) {
+        bits[i] = 0;
+    }
     decToBin(bits, currentProcessStatus);
     /* Il processo corrente è in user mode */
     if(bits[3] == 1) {
@@ -201,7 +203,11 @@ void systemCallsHandler() {
 void exceptionsHandler() {
     /* Calcolo della causa dello stato del processo che ha sollevato l'eccezione */
     state_t *exceptionState = (state_t*) BIOSDATAPAGE;
-    int bits[REGISTERLENGTH] = {0};
+    int bits[REGISTERLENGTH];
+    int i;
+    for(i = 0; i < REGISTERLENGTH; i++) {
+        bits[i] = 0;
+    }
     decToBin(bits, exceptionState->cause);
     int exceptionCauseCode = binToDec(bits, 2, 6);
 

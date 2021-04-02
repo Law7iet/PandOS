@@ -42,3 +42,16 @@ int checkBlockedOnSemDev(int* semaphore) {
     }
     return 0;
 }
+
+void copyProcessorState(state_t *dst, state_t *src) {
+    dst->cause = src->cause;
+    dst->entry_hi = src->entry_hi;
+    dst->hi = src->hi;
+    dst->lo = src->lo;
+    dst->pc_epc = src->pc_epc;
+    dst->status = src->status;
+    int i;
+    for(i = 0; i < STATE_GPR_LEN; i++) {
+        dst->gpr[i] = src->gpr[i];
+    }
+}
