@@ -1,4 +1,8 @@
 #include "scheduler.h"
+#include "pcb.h"
+#include "asl.h"
+#include "tools.h"
+#include <umps3/umps/libumps.h>
 
 void scheduler() {
     /* Controlli dello scheduler */
@@ -12,16 +16,7 @@ void scheduler() {
         /* Non ci sono processi pronti, il processore va in stato d'attesa */
         else if(processCount > 0 && softBlockCount > 0) {
             /* Salvataggio di alcuni registri */ 
-            currentProc->p_s.gpr[0] = 1;
-            currentProc->p_s.gpr[8] = 1;
-            currentProc->p_s.gpr[9] = 1;
-            currentProc->p_s.gpr[10] = 1;
-            currentProc->p_s.gpr[11] = 1;
-            currentProc->p_s.gpr[12] = 1;
-            currentProc->p_s.gpr[13] = 1;
-            currentProc->p_s.gpr[14] = 1;
-            currentProc->p_s.gpr[15] = 1;
-            currentProc->p_s.gpr[27] = 0;
+            currentProc->p_s.status = 0b00010000000000001111111100000001;
             /* Mette il processore in stato d'attesa */
             WAIT();
         }
@@ -31,19 +26,17 @@ void scheduler() {
             PANIC();
         }
     }
-    /* C'è almeno un processo in coda */
-    else {
-        /* Il processo corrente non è vuoto */
-        if(currentProc != NULL) {
-            /* Ha terminato il suo tempo, quindi viene inserito nella coda dei processi ready */
-            insertProcQ(&readyQueue, currentProc);
-        }
-        /* Rimuove il primo processo dalla coda dei processi ready e lo imposta come processo corrente */
-        pcb_t *readyProc = removeProcQ(&readyQueue);
-        currentProc = readyProc;
-        /* Carica il Processor Local Timer di 5 millisecondi*/
-        setTIMER(5000);
-        /* Carica lo stato del processore trovato nel processo estratto */
-        LDST(&(currentProc->p_s));
+
+    /* Il processo corrente non è vuoto */
+    if(currentProc != NULL) {
+        /* Ha terminato il suo tempo, quindi viene inserito nella coda dei processi ready */
+        insertProcQ(&readyQueue, currentProc);
     }
+    /* Rimuove il primo processo dalla coda dei processi ready e lo imposta come processo corrente */
+    pcb_t *readyProc = removeProcQ(&readyQueue);
+    currentProc = readyProc;
+    /* Carica il Processor Local Timer di 5 millisecondi*/
+    setTIMER(5000);
+    /* Carica lo stato del processore trovato nel processo estratto */
+    LDST(&(currentProc->p_s));
 }

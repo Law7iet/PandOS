@@ -3,14 +3,20 @@
 
 #include "pcb.h"
 #include "asl.h"
-#include "init.h"
-#include "scheduler.h"
 #include "tools.h"
-#include "interrupts.h"
 
-extern void exceptionsHandler();
-extern void systemcallsHandler();
+#define SEMAPHORELENGTH 49
+#define REGISTERLENGTH  32
 
+extern int processCount;
+extern int softBlockCount;
+extern pcb_t *readyQueue;
+extern pcb_t *currentProc;
+extern semd_t *sem[SEMAPHORELENGTH];
+
+void exceptionsHandler();
+void systemcallsHandler();
+void passUpOrDie();
 int SYSCALL(CREATEPROCESS, state_t *statep, support_t *supportp, 0);
 void SYSCALL(TERMINATEPROCESS, 0, 0, 0);
 void SYSCALL(PASSEREN, int *semaddr, 0, 0);

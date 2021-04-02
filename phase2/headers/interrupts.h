@@ -1,11 +1,20 @@
 #ifdef INTERRUPTS
 #define INTERRUPTS
 
-#include "init.h"
-#include "scheduler"
-#include "exceptions.h"
+#include "pcb.h"
+#include "asl.h"
 #include "tools.h"
 
-extern void interruptsHanddler()
+#define SEMAPHORELENGTH 49
+#define REGISTERLENGTH  32
+
+extern int processCount;
+extern int softBlockCount;
+extern pcb_t *readyQueue;
+extern pcb_t *currentProc;
+extern semd_t *sem[SEMAPHORELENGTH];
+
+
+void interruptsHandler();
 
 #endif

@@ -1,5 +1,17 @@
 #include "exceptions.h"
-#include "init.h"
+#include "pcb.h"
+#include "asl.h"
+#include "tools.h"
+#include "interrupts.h"
+
+#define SEMAPHORELENGTH 49
+#define REGISTERLENGTH  32
+
+extern int processCount;
+extern int softBlockCount;
+extern pcb_t *readyQueue;
+extern pcb_t *currentProc;
+extern semd_t *sem[SEMAPHORELENGTH];
 
 /* Gestore delle eccezioni */
 void exceptionsHandler() {
@@ -7,25 +19,25 @@ void exceptionsHandler() {
     state_t *exceptionState = (state_t*) BIOSDATAPAGE;
     int bits[REGISTERLENGTH] = {0};
     DecToBin(exceptionState->cause);
-    int exceptionCauseCode = get_num(bits, 2, 6);
+    int exceptionCauseCode = binToDec(bits, 2, 6);
 
     /* In base al suo valore, solleva uno specifico gestore */
     if(exceptionCauseCode == 0) {
         interruptsHandler();
     }
     else if(exceptionCauseCode == 8) {
-        systemcallsHandler();
+        systemCallsHandler();
     }
     else if((exceptionCauseCode >= 1 && exceptionCauseCode <= 3) || (exceptionCauseCode >= 9 && exceptionCauseCode <= 12)) {
-        PassUpOrDie();
+        passUpOrDie();
     }
 }
 
 /* Gestore delle SYSCALL */
-void systemcallsHandler() {
+void systemCallsHandler() {
     /* Controllo che sia in kernel mode */
-    int CurrentProcessStatus = currentProc->p_s.status
-    int bits* = get_bits(CurrentProcessStatus);
+    int currentProcessStatus = currentProc->p_s.status;
+    int *bits = DecToBin(currentProcessStatus);
     /* Il processo corrente è in user mode */
     if(bits[3] == 1) {
         /* Si uccide il processo */
@@ -59,10 +71,10 @@ void systemcallsHandler() {
             case 8:
             SYSCALL(GETSUPPORTPTR, 0, 0, 0);
             break;
-            /* Se a0 è maggiore di 8, si chiama il PassUpOrDie */
+            /* Se a0 è maggiore di 8, si chiama il passUpOrDie */
             default:
             if(currentProc->p_s.gpr[3] >= 9) {
-                PassUpOrDie();
+                passUpOrDie();
             }
         }  
     }
@@ -145,7 +157,7 @@ void SYSCALL(VERHOGEN, int *semaddr, 0, 0) {
 
 int SYSCALL(IOWAIT, int intlNo, int dnum, int termRead) {
     /* Indice del semaforo */    
-    int index = intlNo - 2;
+    int index = intlNo - 3;
     if(termRead == true) {
         index++;
     }
@@ -167,4 +179,8 @@ int SYSCALL(CLOCKWAIT, 0, 0, 0) {
 support_t* SYSCALL(GETSUPPORTPTR, 0, 0, 0) {
     currentProc->p_s.gpr[1] = (support_t *) currentProc->p_supportStruct);
     return currentProc->p_supportStruct;
+}
+
+void passUpOrDie() {
+
 }
