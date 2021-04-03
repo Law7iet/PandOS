@@ -1,7 +1,7 @@
 #ifndef ASL
 #define ASL
 
-#include "pcb.h"
+#include "pandos_types.h"
 
 /* 14
 Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd.

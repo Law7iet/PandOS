@@ -67,7 +67,6 @@ pcb_t * allocPcb() {
         tmp->p_s.lo = 0;
         tmp->p_time = 0;
         tmp->p_semAdd = NULL;
-        tmp->p_supportStruct = NULL;
         /* Ritorna il processo rimosso */
         return tmp;
     }

@@ -1,7 +1,6 @@
 #ifndef PCB
 #define PCB
 
-#include "pandos_const.h"
 #include "pandos_types.h"
 
 /* 1.

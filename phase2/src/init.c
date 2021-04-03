@@ -1,33 +1,21 @@
 #include "asl.h"
 #include "pcb.h"
 #include "tools.h"
+#include "pandos_const.h"
+#include "pandos_types.h"
 #include "scheduler.h"
-#include "exceptions.h"
 
 extern void test();
 extern void uTLB_RefillHandler();
-extern void exceptionsHandler();
-
-/* Sezione 3.1.1 - dichiarazione delle variabili globali */
-int processCount;
-int softBlockCount;
-pcb_t *readyQueue;
-pcb_t *currentProc;
-int *sem[SEMAPHORELENGTH];
-passupvector_t *passUpVector = (passupvector_t *) 0x0FFFF900;
+extern void exceptionHandler();
 
 int main() {
     /* Sezione 3.1.2 - popolazione del Pass Up Vector */
-    /*
-    *((memaddr*) 0x0FFFF900) = (memaddr) uTLB_RefillHandler;
-    *((memaddr*) 0x0FFFF904) = 0x20001000;
-    *((memaddr*) 0x0FFFF908) = (memaddr) exceptionsHandler;
-    *((memaddr*) 0x0FFFF90c) = 0x20001000;
-    */
-    passUpVector->exception_handler = (memaddr) exceptionsHandler;
-    passUpVector->tlb_refill_handler = 0x20001000;
+    passUpVector = (passupvector_t *) (memaddr) PASSUPVECTOR;
+    passUpVector->exception_handler = (memaddr) exceptionHandler;
+    passUpVector->tlb_refill_handler = (memaddr) KERNELSTACK;
     passUpVector->exception_stackPtr = (memaddr) uTLB_RefillHandler;
-    passUpVector->tlb_refill_stackPtr = 0x20001000;
+    passUpVector->tlb_refill_stackPtr = (memaddr) KERNELSTACK;
 
     /* Sezione 3.1.3 - inizializzazione delle strutture di dati */
     initPcbs();
@@ -39,15 +27,14 @@ int main() {
     readyQueue = mkEmptyProcQ();
     currentProc = NULL;
     int i;
-    for(i = 0; i < SEMAPHORELENGTH; i++) {
+    for(i = 0; i < SEMAPHORE_LENGTH; i++) {
         sem[i] = 0;
     }
 
     /* Sezione 3.1.5 - caricare l'Interval Timer */
-    LDIT(100000);
+    LDIT(IT_TIME);
 
     /* Sezione 3.1.6 - instanza del processo test */
-    /* Inizializzazione del processo */
     pcb_t *procTest = allocPcb();
     procTest->p_prnt = NULL;
     procTest->p_child = NULL;
@@ -56,16 +43,11 @@ int main() {
     procTest->p_time = 0;
     procTest->p_semAdd = NULL;
     procTest->p_supportStruct = NULL;
-    /* Attivazione degli interrupt, PLT e kernel-mode */
-    procTest->p_s.status = 0b00001000000000001111111100000100;
-    /* SP impostato con RAMTOP */
-    RAMTOP(procTest->p_s.gpr[26]); 
-    /* PC impostato con test */
+    procTest->p_s.status = STATUS_INIT;
+    RAMTOP(procTest->p_s.reg_sp); 
     procTest->p_s.pc_epc = (memaddr) test;
-    procTest->p_s.gpr[24] = (memaddr) test;
-    /* Inserimento del processo nella coda ready */
+    procTest->p_s.reg_t9 = (memaddr) test;
     insertProcQ(&readyQueue, procTest);
-    /* Aumento del contatore dei processi in coda */
     processCount++;
 
     /* Sezione 3.1.7 - chiamata dello scheduler */
