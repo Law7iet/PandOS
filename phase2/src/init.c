@@ -14,13 +14,20 @@ int softBlockCount;
 pcb_t *readyQueue;
 pcb_t *currentProc;
 int *sem[SEMAPHORELENGTH];
+passupvector_t *passUpVector = (passupvector_t *) 0x0FFFF900;
 
 int main() {
     /* Sezione 3.1.2 - popolazione del Pass Up Vector */
+    /*
     *((memaddr*) 0x0FFFF900) = (memaddr) uTLB_RefillHandler;
     *((memaddr*) 0x0FFFF904) = 0x20001000;
     *((memaddr*) 0x0FFFF908) = (memaddr) exceptionsHandler;
     *((memaddr*) 0x0FFFF90c) = 0x20001000;
+    */
+    passUpVector->exception_handler = (memaddr) exceptionsHandler;
+    passUpVector->tlb_refill_handler = 0x20001000;
+    passUpVector->exception_stackPtr = (memaddr) uTLB_RefillHandler;
+    passUpVector->tlb_refill_stackPtr = 0x20001000;
 
     /* Sezione 3.1.3 - inizializzazione delle strutture di dati */
     initPcbs();

@@ -168,7 +168,6 @@ void systemCallsHandler() {
         bits[i] = 0;
     }
     decToBin(bits, currentProcessStatus);
-                currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
     /* Il processo corrente è in user mode */
     if(bits[3] == 1) {
         /* Si uccide il processo */
