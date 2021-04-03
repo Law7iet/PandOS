@@ -13,7 +13,7 @@ extern int processCount;
 extern int softBlockCount;
 extern pcb_t *readyQueue;
 extern pcb_t *currentProc;
-extern semd_t *sem[SEMAPHORELENGTH];
+extern int *sem[SEMAPHORELENGTH];
 
 void createProcess(state_t *statep, support_t *supportp) {
     /* Nuovo processo */
@@ -25,28 +25,17 @@ void createProcess(state_t *statep, support_t *supportp) {
     }
     /* Il nuovo processo non è vuoto */
     else {
+        /* Inizializzazione dei campi */
         insertProcQ(&(readyQueue), newProcess);
         processCount++;
-        
-        /* Inizializzazione dei campi */
         insertChild(currentProc, newProcess);
-        
-        newProcess->p_s.entry_hi = statep->entry_hi;
-        newProcess->p_s.cause = statep->cause;
-        newProcess->p_s.status = statep->status;
-        newProcess->p_s.pc_epc = statep->pc_epc;
-        int i;
-        for(i = 0; i < STATE_GPR_LEN; i++) {
-            newProcess->p_s.gpr[i] = statep->gpr[i];
-        }
-        newProcess->p_s.hi = statep->hi;
-        newProcess->p_s.lo = statep->lo;
-        
+        copyProcessorState(&(newProcess->p_s), statep);
         newProcess->p_supportStruct = supportp;
-
         newProcess->p_time = 0;
-        
         newProcess->p_semAdd = NULL;
+
+        /* Incremento del PC */
+        currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
 
         /* Salvataggio del valore di ritorno */
         currentProc->p_s.gpr[1] = 0;
@@ -60,13 +49,13 @@ void terminateProcess(pcb_t *proc) {
             pcb_t *tmp = outChild(proc);
             terminateProcess(tmp);
         }
-
+        /* Il processo non ha figli */
         /* Aggiornamento dei semafori */
         if(proc->p_semAdd != NULL) {
             /* Flag che indica se il processso è bloccato su un semaforo device */
             int BlockedOnSemDev = checkBlockedOnSemDev(proc->p_semAdd);
             /* Il processo non è bloccato su un semaforo */
-            if (*(proc->p_semAdd) < 0 && !BlockedOnSemDev) {
+            if (!BlockedOnSemDev) {
                 /* Si aggiorna il valore del semaforo */
                 if(*(proc->p_semAdd) < 0) {
                     *(proc->p_semAdd) = *(proc->p_semAdd) + 1;
@@ -87,59 +76,81 @@ void terminateProcess(pcb_t *proc) {
 }
 
 void passeren(int *semaddr) {
-    *semaddr = *semaddr - 1;
-    /* Il processo viene bloccato */
-    if(*semaddr < 0) {
-        /* TOD clock */
-        unsigned int tmp;
-
-        currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
-        copyProcessorState(&(currentProc->p_s), (state_t *) BIOSDATAPAGE);
-        currentProc->p_time = currentProc->p_time + STCK(tmp);
-        insertBlocked(semaddr, currentProc);
-
-        currentProc = NULL;
-        scheduler();
+    if(semaddr != NULL) {
+        /* Viene richiesto una risorsa */
+        *semaddr = *semaddr - 1;
+        /* Se la risorsa non è disponibile, il processo viene bloccato */
+        if(*semaddr < 0) {
+            /* Aggiornamento dello stato del processo bloccato */
+            copyProcessorState(&(currentProc->p_s), (state_t *) BIOSDATAPAGE);
+            /* TOD clock */
+            unsigned int tmp;
+            currentProc->p_time = currentProc->p_time + STCK(tmp);
+            insertBlocked(semaddr, currentProc);
+            scheduler();
+        }
     }
 }
 
 void verhogen(int *semaddr) {
-    (*semaddr)++;
-    pcb_t *process = removeBlocked(semaddr);
-    if(process != NULL) {
-        insertProcQ(&readyQueue, process);
+    if(semaddr != NULL) {
+        /* Viene rilasciato una risorsa */
+        (*semaddr)++;
+        /* Il processo bloccato, se presente, viene liberato */
+        pcb_t *process = removeBlocked(semaddr);
+        if(process != NULL) {
+            insertProcQ(&readyQueue, process);
+        }
     }
 }
 
-void ioWait(int intlNo, int dnum, int termRead) {
-    /* Indice del semaforo */    
-    int index = intlNo - 3;
+void ioWait(int intLineNo, int devNo, int termRead) {
+    /* Calcolo dell'indice del semaforo */    
+    int index = intLineNo - 3;
     if(termRead == TRUE) {
         index++;
     }
+    index = (index * devNo) + 1;
+
+    /* Blocco del processo corrente */
     softBlockCount++;
-    currentProc->p_s.gpr[1] = 0;
-    dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((intlNo - 3) * 0x80) + (dnum * 0x10));
+
+    /* Registro del semaforo che ha bloccato il processo corrente */
+    dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((intLineNo - 3) * 0x80) + (devNo * 0x10));
+
+    /* Incremento del PC */
+    currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
+    
+    /* Salvataggio del valore di ritorno */
     currentProc->p_s.gpr[1] = devRegister->status;
-    passeren(sem[(index * dnum) + 1]->s_semAdd);
+    passeren(sem[index]);
 }
 
 void getTime() {
+    /* Incremento del PC */
+    currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
+
+    /* Salvataggio del valore di ritorno */
     currentProc->p_s.gpr[1] = currentProc->p_time;
 }
 
 void clockWait() {
     softBlockCount++;
-    passeren(sem[0]->s_semAdd);
+    passeren(sem[0]);
 }
 
 void getSupportPtr() {
+    /* Incremento del PC */
+    currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
+
+    /* Salvataggio del valore di ritorno */
     currentProc->p_s.gpr[1] = (unsigned int) currentProc->p_supportStruct;
 }
 
 void passUpOrDie(int i) {
     if(currentProc->p_supportStruct == NULL) {
         terminateProcess(currentProc);
+        scheduler();
     } else {
         copyProcessorState(&(currentProc->p_supportStruct->sup_exceptState[i]), (state_t *) BIOSDATAPAGE);
         LDCXT(currentProc->p_supportStruct->sup_exceptState[i].gpr[26], currentProc->p_supportStruct->sup_exceptState[i].status, currentProc->p_supportStruct->sup_exceptState[i].pc_epc);
@@ -157,22 +168,21 @@ void systemCallsHandler() {
         bits[i] = 0;
     }
     decToBin(bits, currentProcessStatus);
+                currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 0x4;
     /* Il processo corrente è in user mode */
     if(bits[3] == 1) {
         /* Si uccide il processo */
-        SYSCALL(2, 0, 0, 0);
+        terminateProcess(currentProc);
+        scheduler();
     }
     /* Il processo corrente è in kernel mode */
     else {
         switch(currentProc->p_s.gpr[3]) {
-        /* currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]); */
             case 1:
                 createProcess((state_t *) currentProc->p_s.gpr[4], (support_t *) currentProc->p_s.gpr[5]);
                 break;
             case 2:
-                if(currentProc != NULL) {
-                    terminateProcess(currentProc);
-                }
+                terminateProcess(currentProc);
                 scheduler();
                 break;
             case 3:
@@ -182,7 +192,7 @@ void systemCallsHandler() {
                 verhogen((int *) currentProc->p_s.gpr[4]);
                 break;
             case 5:
-                ioWait(currentProc->p_s.gpr[4], currentProc->p_s.gpr[5], currentProc->p_s.gpr[6]);
+                ioWait((int) currentProc->p_s.gpr[4], (int) currentProc->p_s.gpr[5], (int) currentProc->p_s.gpr[6]);
                 break;
             case 6:
                 getTime();
@@ -201,14 +211,15 @@ void systemCallsHandler() {
 
 /* Gestore delle eccezioni */
 void exceptionsHandler() {
+    /* Copio lo stato dell'eccezione nel processo corrente */
+    copyProcessorState(&(currentProc->p_s), (state_t *) BIOSDATAPAGE);
     /* Calcolo della causa dello stato del processo che ha sollevato l'eccezione */
-    state_t *exceptionState = (state_t*) BIOSDATAPAGE;
     int bits[REGISTERLENGTH];
     int i;
     for(i = 0; i < REGISTERLENGTH; i++) {
         bits[i] = 0;
     }
-    decToBin(bits, exceptionState->cause);
+    decToBin(bits, currentProc->p_s.cause);
     int exceptionCauseCode = binToDec(bits, 2, 6);
 
     /* In base al suo valore, solleva uno specifico gestore */
@@ -218,7 +229,10 @@ void exceptionsHandler() {
     else if(exceptionCauseCode == 8) {
         systemCallsHandler();
     }
-    else if((exceptionCauseCode >= 1 && exceptionCauseCode <= 3) || (exceptionCauseCode >= 9 && exceptionCauseCode <= 12)) {
+    else if(exceptionCauseCode >= 1 && exceptionCauseCode <= 3) {
         passUpOrDie(0);
+    }
+    else if((exceptionCauseCode >= 4 && exceptionCauseCode <= 7) || (exceptionCauseCode >= 9 && exceptionCauseCode <= 12)) {
+        passUpOrDie(1); 
     }
 }

@@ -12,7 +12,7 @@ extern int processCount;
 extern int softBlockCount;
 extern pcb_t *readyQueue;
 extern pcb_t *currentProc;
-extern semd_t *sem[SEMAPHORELENGTH];
+extern int *sem[SEMAPHORELENGTH];
 
 void interruptsHandler();
 

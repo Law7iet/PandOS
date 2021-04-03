@@ -21,17 +21,12 @@ void scheduler() {
             WAIT();
         }
         /* Presenza di un deadlock */
-        else if(processCount > 0 && softBlockCount > 0) {
+        else if(processCount > 0 && softBlockCount == 0) {
             /* Si invoca PANIC() */
             PANIC();
         }
     }
 
-    /* Il processo corrente non è vuoto */
-    if(currentProc != NULL) {
-        /* Ha terminato il suo tempo, quindi viene inserito nella coda dei processi ready */
-        insertProcQ(&readyQueue, currentProc);
-    }
     /* Rimuove il primo processo dalla coda dei processi ready e lo imposta come processo corrente */
     pcb_t *readyProc = removeProcQ(&readyQueue);
     currentProc = readyProc;

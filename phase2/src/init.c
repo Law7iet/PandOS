@@ -13,7 +13,7 @@ int processCount;
 int softBlockCount;
 pcb_t *readyQueue;
 pcb_t *currentProc;
-semd_t *sem[SEMAPHORELENGTH];
+int *sem[SEMAPHORELENGTH];
 
 int main() {
     /* Sezione 3.1.2 - popolazione del Pass Up Vector */
@@ -39,7 +39,8 @@ int main() {
     /* Sezione 3.1.5 - caricare l'Interval Timer */
     LDIT(100000);
 
-    /* Sezione 3.1.6 -inizializzazione del processo test */
+    /* Sezione 3.1.6 - instanza del processo test */
+    /* Inizializzazione del processo */
     pcb_t *procTest = allocPcb();
     procTest->p_prnt = NULL;
     procTest->p_child = NULL;
@@ -49,13 +50,12 @@ int main() {
     procTest->p_semAdd = NULL;
     procTest->p_supportStruct = NULL;
     /* Attivazione degli interrupt, PLT e kernel-mode */
-    procTest->p_s.status = 0b00011000000000001111111100000100;
+    procTest->p_s.status = 0b00001000000000001111111100000100;
     /* SP impostato con RAMTOP */
-    int tmp = RAMTOP(tmp);
-    procTest->p_s.gpr[26] = tmp;
+    RAMTOP(procTest->p_s.gpr[26]); 
     /* PC impostato con test */
     procTest->p_s.pc_epc = (memaddr) test;
-    procTest->p_s.gpr[26] = (memaddr) test;
+    procTest->p_s.gpr[24] = (memaddr) test;
     /* Inserimento del processo nella coda ready */
     insertProcQ(&readyQueue, procTest);
     /* Aumento del contatore dei processi in coda */

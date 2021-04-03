@@ -7,11 +7,11 @@
 #include "scheduler.h"
 #include "exceptions.h"
 
-int getDeviceNumber(int IntLineNo) {
+int getDeviceNumber(int intLineNo) {
     int bitMap = 0x10000040;
     int i;
 
-    switch(IntLineNo) {
+    switch(intLineNo) {
         case 4:
         bitMap = bitMap + 0x04;
         break;
@@ -35,27 +35,34 @@ int getDeviceNumber(int IntLineNo) {
     return -1;
 }
 
-void deviceInterruptHandler(int IntLineNo) {
+void deviceInterruptHandler(int intLineNo) {
     /* Calcolo ddell'indirizzo del registro del device */
-    int DevNo = getDeviceNumber(IntLineNo);
-    dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((IntLineNo - 3) * 0x80) + (DevNo * 0x10));
+    int devNo = getDeviceNumber(intLineNo);
+    dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((intLineNo - 3) * 0x80) + (devNo * 0x10));
+    /* Registro status del device */
     int devStatus = devRegister->status;
+    /* Invio dell'ACK */
     devRegister->command = ACK;
-    pcb_t *unblockedProc = headBlocked(sem[(IntLineNo-3)*DevNo+1]->s_semAdd);
-    unblockedProc->p_s.status = devStatus;
-    verhogen(sem[(IntLineNo-3)*DevNo+1]->s_semAdd);
+    /* Processo da liberare */
+    pcb_t *unblockedProc = headBlocked(sem[(intLineNo - 3) * devNo + 1]);
+    /* Liberazione del processo */
+    verhogen(sem[(intLineNo - 3) * devNo + 1]);
+    /* Salvataggio del registro nel processo da liberare */
+    unblockedProc->p_s.gpr[0] = devStatus;
+    /* Inserimento della coda dei processi ready */
+    insertProcQ(&(readyQueue), unblockedProc);
+    /* Ritorno ddel controllo al processo corrente */
     LDST(&(currentProc->p_s));
 }
 
 void interruptsHandler() {
     /* Calcolo della linea di interrupt del processo che ha sollevato l'eccezione */
-    state_t *exceptionState = (state_t*) BIOSDATAPAGE;
     int bits[REGISTERLENGTH];
     int i;
     for(i = 0; i < REGISTERLENGTH; i++) {
         bits[i] = 0;
     }
-    decToBin(bits, exceptionState->cause);
+    decToBin(bits, currentProc->p_s.cause);
     /* In base al suo valore, solleva uno specifico gestore */
     if(bits[1] == 1) {
         /* PLT */
@@ -66,9 +73,8 @@ void interruptsHandler() {
     } else if(bits[2] == 1) {
         /* IT */
         LDIT(100000);
-        while(!emptyProcQ(sem[0]->s_procQ)) {
-            /* unblock all pcb blocked on pseudo-clock semaphore */
-            verhogen(sem[0]->s_semAdd);
+        while(sem[0] >= 0) {
+            verhogen(sem[0]);
         }
         sem[0] = 0;
         LDST((state_t *) BIOSDATAPAGE);

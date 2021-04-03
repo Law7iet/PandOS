@@ -8,7 +8,7 @@ extern int processCount;
 extern int softBlockCount;
 extern pcb_t *readyQueue;
 extern pcb_t *currentProc;
-extern semd_t *sem[SEMAPHORELENGTH];
+extern int *sem[SEMAPHORELENGTH];
 
 void decToBin(int bits[], int n) {
     int i = 0;
@@ -30,10 +30,10 @@ int binToDec(int bits[], int first, int last) {
     return num;
 }
 
-int checkBlockedOnSemDev(int* semaphore) {
+int checkBlockedOnSemDev(int* semAdd) {
     int i;
     for(i = 0; i < SEMAPHORELENGTH; i++) {
-        if(sem[i]->s_semAdd == semaphore) {
+        if(sem[i] == semAdd) {
             return 1;
         }
     }
