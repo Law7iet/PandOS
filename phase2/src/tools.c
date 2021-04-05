@@ -80,3 +80,7 @@ void recTerminateProcess(pcb_t *proc) {
         processCount--;
     }
 }
+
+void breakPoint() {
+    
+}

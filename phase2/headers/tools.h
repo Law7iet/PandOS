@@ -23,5 +23,6 @@ int binToDec(int bits[], int first, int last);
 int checkBlockedOnSemDev(int *semaphore);
 void copyProcessorState(state_t *dst, state_t *src);
 void recTerminateProcess(pcb_t *proc);
+void breakPoint();
 
 #endif

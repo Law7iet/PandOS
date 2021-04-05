@@ -57,9 +57,10 @@ void passeren(int *semaddr) {
             currentProc->p_time = currentProc->p_time + STCK(clock);
             insertBlocked(semaddr, currentProc);
             scheduler();
+        } else {
+            newState->pc_epc = newState->pc_epc + 4;
+            LDST(newState);
         }
-        newState->pc_epc = newState->pc_epc + 4;
-        LDST(newState);
     }
 }
 
@@ -86,7 +87,27 @@ void ioWait(int intLineNo, int devNo, int termRead) {
         index++;
     }
     index = (index * 8) + devNo + 1;
-    passeren(sem[index]);
+
+    /* Nuovo stato */
+    state_t *newState = (state_t *) BIOSDATAPAGE;
+    /* Registro del semaforo che ha bloccato il processo corrente */
+    dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((intLineNo - 3) * 0x80) + (devNo * 0x10));
+    /* Salvataggio del valore di ritorno */
+    newState->reg_v0 = devRegister->status;
+    /* Viene richiesto una risorsa */
+    *sem[index] = *sem[index] - 1;
+    /* Se la risorsa non è disponibile, il processo viene bloccato */
+    if(*sem[index] < 0) {
+        unsigned int clock;
+        softBlockCount++;
+        copyProcessorState(&(currentProc->p_s), newState);
+        currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 4;
+        currentProc->p_time = currentProc->p_time + STCK(clock);
+        insertBlocked(sem[index], currentProc);
+        scheduler();
+    }
+    newState->pc_epc = newState->pc_epc + 4;
+    LDST(newState);
 }
 
 void getTime() {
