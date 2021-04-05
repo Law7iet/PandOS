@@ -77,8 +77,10 @@ void interruptsHandler() {
         /* IT */
         breakPoint();
         LDIT(IT_TIME);
-        while(removeBlocked(sem[0]) != NULL) {
-            verhogen(sem[0]);
+        while(headBlocked(sem[0]) != NULL) {
+            pcb_t *tmp = removeBlocked(sem[0]);
+            insertProcQ(&readyQueue, tmp);
+            softBlockCount--;
         }
         sem[0] = 0;
         LDST(excState);
