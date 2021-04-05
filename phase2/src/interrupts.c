@@ -66,14 +66,14 @@ void interruptsHandler() {
     }
     decToBin(bits, excState->cause);
     /* In base al suo valore, solleva uno specifico gestore */
-    if(bits[8] == 1) {
+    if(bits[9] == 1) {
         /* PLT */
         breakPoint();
         setTIMER(PLT_TIME);
         copyProcessorState(&(currentProc->p_s), excState);
         insertProcQ(&readyQueue, currentProc);
         scheduler();
-    } else if(bits[9] == 1) {
+    } else if(bits[10] == 1) {
         /* IT */
         breakPoint();
         LDIT(IT_TIME);
@@ -84,23 +84,23 @@ void interruptsHandler() {
         }
         sem[0] = 0;
         LDST(excState);
-    } else if(bits[10] == 1) {
+    } else if(bits[11] == 1) {
         /* Disk Device */
         breakPoint();
         deviceInterruptHandler(3);
-    } else if(bits[11] == 1) {
+    } else if(bits[12] == 1) {
         /* Flash Device */
         breakPoint();
         deviceInterruptHandler(4);
-    } else if(bits[12] == 1) {
+    } else if(bits[13] == 1) {
         /* Network Device */
         breakPoint();
         deviceInterruptHandler(5);
-    } else if(bits[13] == 1) {
+    } else if(bits[14] == 1) {
         /* Printer Device */
         breakPoint();
         deviceInterruptHandler(6);
-    } else if(bits[14] == 1) {
+    } else if(bits[15] == 1) {
         /* Terminal Device */
         breakPoint();
         deviceInterruptHandler(7);
