@@ -26,7 +26,7 @@ int getDeviceNumber(int intLineNo) {
 
     int i;
     for(i = 0; i < 8; i++) {
-        if(bitMap + i == 1) {
+        if(*((int *) (bitMap + i)) == 1) {
             return i;
         }
     }
@@ -48,9 +48,11 @@ void deviceInterruptHandler(int intLineNo) {
 
         devRegister->command = ACK;
         pcb_t *unblockedProc = headBlocked(sem[index]);
-        unblockedProc->p_s.reg_at = devStatus;
-        verhogen(sem[index]);
-        insertProcQ(&(readyQueue), unblockedProc);
+        if(unblockedProc == NULL) {
+            unblockedProc->p_s.reg_v0  = devStatus;
+            verhogen(sem[index]);
+            insertProcQ(&(readyQueue), unblockedProc);
+        }
         LDST(excState);
     }
 }

@@ -14,12 +14,15 @@ void createProcess(state_t *statep, support_t *supportp) {
     pcb_t *newProcess = allocPcb();
     /* Valore di ritorno */
     int returnValue;
+
     /* Non è possibile istanziare un nuovo processo */
     if(newProcess == NULL) {
         returnValue = -1;
     }
     /* E' possibile istanziare un nuovo processo */
     else {
+        returnValue = 0;
+
         /* Inizializzazione dei campi */
         insertProcQ(&(readyQueue), newProcess);
         processCount++;
@@ -28,8 +31,6 @@ void createProcess(state_t *statep, support_t *supportp) {
         newProcess->p_supportStruct = supportp;
         newProcess->p_time = 0;
         newProcess->p_semAdd = NULL;
-
-        returnValue = 0;
     }
     
     newState->pc_epc = newState->pc_epc + 4;
@@ -105,9 +106,10 @@ void ioWait(int intLineNo, int devNo, int termRead) {
         currentProc->p_time = currentProc->p_time + STCK(clock);
         insertBlocked(sem[index], currentProc);
         scheduler();
+    } else {
+        newState->pc_epc = newState->pc_epc + 4;
+        LDST(newState);
     }
-    newState->pc_epc = newState->pc_epc + 4;
-    LDST(newState);
 }
 
 void getTime() {
