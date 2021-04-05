@@ -13,8 +13,8 @@ int main() {
     /* Sezione 3.1.2 - popolazione del Pass Up Vector */
     passUpVector = (passupvector_t *) (memaddr) PASSUPVECTOR;
     passUpVector->exception_handler = (memaddr) exceptionHandler;
-    passUpVector->tlb_refill_handler = (memaddr) KERNELSTACK;
-    passUpVector->exception_stackPtr = (memaddr) uTLB_RefillHandler;
+    passUpVector->tlb_refill_handler = (memaddr) uTLB_RefillHandler;
+    passUpVector->exception_stackPtr = (memaddr) KERNELSTACK;
     passUpVector->tlb_refill_stackPtr = (memaddr) KERNELSTACK;
 
     /* Sezione 3.1.3 - inizializzazione delle strutture di dati */
@@ -27,8 +27,10 @@ int main() {
     readyQueue = mkEmptyProcQ();
     currentProc = NULL;
     int i;
+    int semValue[SEMAPHORE_LENGTH];
     for(i = 0; i < SEMAPHORE_LENGTH; i++) {
-        sem[i] = 0;
+        semValue[i] = 0;
+        sem[i] = &semValue[i];
     }
 
     /* Sezione 3.1.5 - caricare l'Interval Timer */

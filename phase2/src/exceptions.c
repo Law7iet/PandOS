@@ -51,7 +51,7 @@ void passeren(int *semaddr) {
         /* Se la risorsa non è disponibile, il processo viene bloccato */
         if(*semaddr < 0) {
             unsigned int clock;
-
+            softBlockCount++;
             copyProcessorState(&(currentProc->p_s), newState);
             currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 4;
             currentProc->p_time = currentProc->p_time + STCK(clock);
@@ -85,9 +85,7 @@ void ioWait(int intLineNo, int devNo, int termRead) {
     if(intLineNo == 7 && termRead == TRUE) {
         index++;
     }
-    index = (index * devNo) + 1;
-
-    softBlockCount++;
+    index = (index * 8) + devNo + 1;
     passeren(sem[index]);
 }
 

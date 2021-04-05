@@ -22,11 +22,11 @@ void scheduler() {
             /* Si va in panico */
             PANIC();
         }
+    } else {
+        /* Cambio del processo */
+        pcb_t *readyProc = removeProcQ(&readyQueue);
+        currentProc = readyProc;
+        setTIMER(PLT_TIME);
+        LDST(&(currentProc->p_s));
     }
-
-    /* Cambio del processo */
-    pcb_t *readyProc = removeProcQ(&readyQueue);
-    currentProc = readyProc;
-    setTIMER(PLT_TIME);
-    LDST(&(currentProc->p_s));
 }
