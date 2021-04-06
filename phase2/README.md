@@ -15,6 +15,11 @@ Installazione:
 - Eseguire il programma cliccando il bottone `Continue` o digitando `F9`.
 - Per visualizzare eventuali output cliccare su `Windows` `Terminal 0`.
 
+Note
+Al momento il progetto non è completamente funzionante secondo le specifiche fornite in fase 2. In particolare
+sono presenti alcuni errori di gestione degli interrupt e scheduler.
+
+
 ## Autori
 - Alessio Brusori, 0000934600
 - Han Chu, 0000882776
