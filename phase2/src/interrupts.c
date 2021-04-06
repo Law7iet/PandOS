@@ -33,29 +33,63 @@ int getDeviceNumber(int intLineNo) {
     return -1;
 }
 
-void deviceInterruptHandler(int intLineNo) {
-    /* Stato del processo che ha sollevato l'eccezione */
-    state_t *excState = (state_t *) BIOSDATAPAGE;
-    /* Calcolo ddell'indirizzo del registro del device */
-    int devNo = getDeviceNumber(intLineNo);
-    if (devNo != -1) {
-        /* Registro del device */
-        dtpreg_t *devRegister = (dtpreg_t *) (0x10000054 + ((intLineNo - 3) * 0x80) + (devNo * 0x10));
-        /* Registro status del device */
-        int devStatus = devRegister->status;
-        /* Indice del semaforo */
-        int index = ((intLineNo - 3) * devNo) + 1;
 
-        devRegister->command = ACK;
-        pcb_t *unblockedProc = headBlocked(sem[index]);
-        if(unblockedProc == NULL) {
-            unblockedProc->p_s.reg_v0  = devStatus;
-            verhogen(sem[index]);
-            insertProcQ(&(readyQueue), unblockedProc);
+void deviceInterruptHandler(int intLineNo) {
+    int devNo;
+    /* Stato del processo che ha sollevato l'eccezione */
+    state_t *excState = (state_t *)BIOSDATAPAGE;
+    if (intLineNo == 7) {
+       
+        /* Calcolo ddell'indirizzo del registro del device */
+        devNo = getDeviceNumber(intLineNo);
+        if (devNo != -1) {
+            /* Registro del device */
+            termreg_t *terRegister = (termreg_t *)(0x10000054 + ((intLineNo - 3) * 0x80) + (devNo * 0x10);
+            /* Registro status del device */
+            int terStatus = devRegister->transm_status;
+            /* Indice del semaforo */
+            int tIndex = ((intLineNo - 3) * 8) + terNo + 1;
+
+            devRegister->transm_command = ACK;
+            pcb_t *unblockedProc        = headBlocked(sem[index]);
+            if (unblockedProc == NULL) {
+                unblockedProc->p_s.reg_v0 = devStatus;
+                verhogen(sem[index]);
+                insertProcQ(&(readyQueue), unblockedProc);
+            }
+            if (currentProc ==  NULL) 
+                LDST(excState); 
+            else 
+            scheduler();
+              
+        }else{
+            
+            /* Calcolo ddell'indirizzo del registro del device */
+            devNo = getDeviceNumber(intLineNo);
+            if (devNo != -1) {
+                /* Registro del device */
+                dtpreg_t *devRegister = (dtpreg_t *)(0x10000054 + ((intLineNo - 3) * 0x80) + (devNo * 0x10));
+                /* Registro status del device */
+                int devStatus = devRegister->status;
+                /* Indice del semaforo */
+                int index = ((intLineNo - 3) * 8) + devNo + 1;
+
+                devRegister->command = ACK;
+                pcb_t *unblockedProc = headBlocked(sem[index]);
+                if (unblockedProc == NULL) {
+                    unblockedProc->p_s.reg_v0 = devStatus;
+                    verhogen(sem[index]);
+                    insertProcQ(&(readyQueue), unblockedProc);
+                }
+                if (currentProc ==  NULL) 
+                    LDST(excState); 
+                else 
+                scheduler();                
+            }
         }
-        LDST(excState);
     }
 }
+
 
 void interruptsHandler() {
     /* Stato del processo che ha sollevato l'eccezione */
