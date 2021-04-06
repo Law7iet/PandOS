@@ -26,7 +26,7 @@ int getDeviceNumber(int intLineNo) {
 
     int i;
     for(i = 0; i < 8; i++) {
-        if(*((int *) (bitMap + i)) == 1) {
+        if ((*((int*)bitMap) & (1 << i)) > 0) {
             return i;
         }
     }

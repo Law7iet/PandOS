@@ -27,7 +27,7 @@ int main() {
     readyQueue = mkEmptyProcQ();
     currentProc = NULL;
     int i;
-    int semValue[SEMAPHORE_LENGTH];
+    static int semValue[SEMAPHORE_LENGTH];
     for(i = 0; i < SEMAPHORE_LENGTH; i++) {
         semValue[i] = 0;
         sem[i] = &semValue[i];

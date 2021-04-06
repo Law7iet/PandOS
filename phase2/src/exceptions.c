@@ -105,6 +105,7 @@ void ioWait(int intLineNo, int devNo, int termRead) {
         currentProc->p_s.pc_epc = currentProc->p_s.pc_epc + 4;
         currentProc->p_time = currentProc->p_time + STCK(clock);
         insertBlocked(sem[index], currentProc);
+        processCount--;
         scheduler();
     } else {
         newState->pc_epc = newState->pc_epc + 4;
